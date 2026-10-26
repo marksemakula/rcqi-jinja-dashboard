@@ -2,6 +2,18 @@
 
 Interactive dashboard for Regional Continuous Quality Improvement (RCQI) at Jinja Regional Referral Hospital (JRRH), Busoga Region, Uganda. Data is collected through six Google Forms that write to one master Google Sheet. A Google Apps Script data service publishes de-identified records to this Next.js dashboard, which is hosted on Vercel and deployed automatically from GitHub.
 
+## Live links
+
+- Dashboard: https://rcqi-jinja-dashboard.vercel.app
+- Patient Safety Report (HSR): https://forms.gle/arH8fvVAzBxG61iS8
+- 5S Monitoring and Evaluation: https://forms.gle/TAKi9NU6GHDZQFBPA
+- Hand Hygiene Observation: https://forms.gle/hbudJaqDuijoZ9ob9
+- Basic IPC Assessment: https://forms.gle/dWE4j4qkr7EZm4hV9
+- IPC Facility Assessment Tool (MoH 2024): https://forms.gle/WmphR6YYddGHrzYq7
+- HFQAP Facility Assessment: https://forms.gle/hFs5hkFzZS7WtD398
+
+The master sheet, the forms and the Apps Script project live in the "RCQI Jinja RRH" folder of the RCQI Google Drive account.
+
 ## What the dashboard covers
 
 | Area | Source tool | Google Form |
