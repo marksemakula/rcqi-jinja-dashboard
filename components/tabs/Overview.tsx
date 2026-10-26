@@ -6,6 +6,7 @@ import type { TabProps } from './shared';
 import { FIVE_S_DOMAINS, HFQAP_MODULES, HH_MOMENTS, BASIC_IPC_DOMAINS } from '@/lib/catalogue';
 import { categoryAxis, FONT, grid, heatCell, heatVisualMap, tooltip } from '@/lib/chart';
 import { countBy, fmtInt, fmtPct, latestBy, mean, monthKey, monthRange, shortMonth } from '@/lib/format';
+import { buildJournal } from '@/lib/journal';
 import { palette } from '@/lib/palette';
 import { hhMoments, hhTotals, scoreBasicIpc, scoreFiveS, scoreHfqap, scoreMohIpc } from '@/lib/scoring';
 
@@ -15,14 +16,18 @@ const TOOLS = [
   { key: 'fives', label: '5S assessments', tab: 'fives' },
   { key: 'ipcBasic', label: 'Basic IPC assessments', tab: 'ipc' },
   { key: 'ipcMoh', label: 'IPC tool (MoH 2024)', tab: 'ipc' },
-  { key: 'hfqap', label: 'HFQAP assessments', tab: 'hfqap' }
+  { key: 'hfqap', label: 'HFQAP assessments', tab: 'hfqap' },
+  { key: 'qij', label: 'QI journal entries', tab: 'journal' }
 ] as const;
 
 export default function Overview({ data, go }: TabProps) {
   const months = useMemo(() => {
     const keys = [...data.hsr, ...data.hh, ...data.fives, ...data.ipcBasic, ...data.ipcMoh, ...data.hfqap].map((r) => monthKey(r.date)).filter(Boolean).sort();
+    // Journal entries are not period-filtered, so they never stretch the month axis beyond the selected period.
     return keys.length ? monthRange(keys[0], keys[keys.length - 1]) : [];
   }, [data]);
+
+  const journal = useMemo(() => buildJournal(data.qij), [data.qij]);
 
   const kpis = useMemo(() => {
     const hsrByMonth = countBy(data.hsr, (r) => monthKey(r.date));
@@ -138,6 +143,7 @@ export default function Overview({ data, go }: TabProps) {
         <button type="button" className="kpi-btn" onClick={() => go('ipc')}><Kpi label="Basic IPC rated Green" value={`${kpis.basic.green} of ${kpis.basic.n}`} sub={`Average core score ${fmtPct(kpis.basic.mean)}`} /></button>
         <button type="button" className="kpi-btn" onClick={() => go('ipc')}><Kpi label="IPC tool average (MoH 2024)" value={fmtPct(kpis.moh.mean)} sub={`${kpis.moh.n} facilities, latest assessment`} /></button>
         <button type="button" className="kpi-btn" onClick={() => go('hfqap')}><Kpi label="HFQAP average score" value={fmtPct(kpis.hfq.mean)} sub={kpis.hfq.n ? `Mean star rating ${kpis.hfq.stars?.toFixed(1)} of 5` : 'No assessments'} /></button>
+        <button type="button" className="kpi-btn" onClick={() => go('journal')}><Kpi label="QI projects" value={String(journal.length)} sub={`${journal.filter((p) => p.status === 'Active').length} active, ${journal.reduce((n, p) => n + p.changes.length, 0)} changes tested`} /></button>
       </div>
       <div className="grid">
         <ChartCard span={2} title="Data submissions by tool and month" subtitle="Darker cells show more submissions. Select a row to open that tool." option={heat.option} height={300} table={heat.table}

@@ -7,7 +7,8 @@ import {
   HSR_OUTCOMES, HSR_STATUSES, HSR_TIMEFRAMES, MOH_IPC_AREAS, MOH_IPC_GRADED, MOH_IPC_REVERSE
 } from './catalogue';
 import { expectedFor, levelKey } from './scoring';
-import type { Dataset, FiveSRec, HfqapRec, HhRec, HsrRec, IpcBasicRec, IpcMohRec } from './types';
+import { JOURNAL_ENTRY_TYPES, projectLabel } from './journal';
+import type { Dataset, FiveSRec, HfqapRec, HhRec, HsrRec, IpcBasicRec, IpcMohRec, QijRec } from './types';
 
 function mulberry32(seed: number) {
   let a = seed >>> 0;
@@ -191,5 +192,76 @@ export function buildDemo(today = new Date()): Dataset {
     });
   });
 
-  return { hsr, fives, hh, ipcBasic, ipcMoh, hfqap };
+  /* QI Documentation Journal: three illustrative improvement projects */
+  const qij: QijRec[] = [];
+  const DEMO_PROJECTS = [
+    {
+      facility: HOSPITAL, district: 'Jinja City', department: 'NICU', title: 'Reduce hypothermia on admission to NICU', teamSize: 6, startBack: 11, endAhead: 1, target: 80,
+      objective: 'Increase the proportion of neonates admitted to NICU with a normal axillary temperature (36.5 to 37.5 C) from 40% to 80% within twelve months.',
+      indicator: 'Neonates admitted to NICU with a normal temperature (%)', numeratorDef: 'Neonates with an axillary temperature of 36.5 to 37.5 C on admission', denominatorDef: 'All neonates admitted to NICU in the month',
+      problem: 'Most neonates arrive in NICU cold after delivery and transfer from theatre and the labour suite. The MoH standard is to keep newborns warm from birth through the warm chain, but skin-to-skin contact, drying and covering are not done consistently and the transport cot is often cold.',
+      start: 41, end: 79,
+      changes: [
+        [1, 'Skin-to-skin contact for stable babies in theatre and the delivery room', 'Yes', 'Midwives champion the practice on every shift.'],
+        [3, 'Pre-warmed transport incubator kept ready at the labour suite', 'Yes', 'Fewer cold arrivals from the labour suite.'],
+        [5, 'Admission temperature recorded within 30 minutes on a wall chart', 'Yes', 'Visible results motivated the team.'],
+        [8, 'Hats and socks issued from NICU stock at every delivery', 'Too early to tell', null]
+      ]
+    },
+    {
+      facility: HOSPITAL, district: 'Jinja City', department: 'Casualty and OPD', title: 'Triage emergency patients within 15 minutes', teamSize: 5, startBack: 8, endAhead: 4, target: 90,
+      objective: 'Ensure that 90% of patients arriving at Casualty are triaged within 15 minutes of arrival.',
+      indicator: 'Patients triaged within 15 minutes of arrival (%)', numeratorDef: 'Sampled patients triaged within 15 minutes', denominatorDef: 'Patients sampled at Casualty in the month',
+      problem: 'Patients wait at the Casualty entrance without assessment, especially at shift changes. The MoH emergency care standard expects immediate triage, but there is no dedicated triage nurse and the arrival time is not recorded.',
+      start: 34, end: 71,
+      changes: [
+        [1, 'Dedicated triage nurse allocated on the duty roster for every shift', 'Yes', 'Largest single gain.'],
+        [3, 'Arrival time stamped on every Casualty card at the gate', 'Yes', null],
+        [5, 'Triage desk moved to the main entrance', 'No', 'Flow improved but staffing gaps at night remained.']
+      ]
+    },
+    {
+      facility: 'Demo Facility A HC IV', district: 'Kamuli', department: null, title: 'Early first antenatal visit', teamSize: 4, startBack: 10, endAhead: -1, target: 45,
+      objective: 'Increase the share of first antenatal visits made in the first trimester from 20% to 45%.',
+      indicator: 'First antenatal visits within the first trimester (%)', numeratorDef: 'ANC first visits before 12 weeks of gestation', denominatorDef: 'All ANC first visits in the month',
+      problem: 'Most mothers start antenatal care late, after the first trimester, missing early screening and counselling recommended by the MoH guidelines. Village health teams do not routinely identify newly pregnant women.',
+      start: 22, end: 43,
+      changes: [
+        [1, 'Village health teams refer newly pregnant women identified during home visits', 'Yes', null],
+        [4, 'Radio talk show on early antenatal care', 'No', 'Few mothers reported hearing it.'],
+        [6, 'Free pregnancy testing at outreach clinics', 'Yes', 'Mothers come early once the test is positive.']
+      ]
+    }
+  ];
+  DEMO_PROJECTS.forEach((p, pi) => {
+    const startMonth = start.getUTCMonth() + (11 - p.startBack);
+    const reg = new Date(Date.UTC(start.getUTCFullYear(), startMonth, 3));
+    const endDate = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() + p.endAhead, 28));
+    const label = projectLabel({ facility: p.facility, projectTitle: p.title });
+    qij.push({
+      id: `qij-demo-${pi}-reg`, ts: reg.toISOString(), date: iso(reg), facility: p.facility, district: p.district, items: {},
+      entryType: JOURNAL_ENTRY_TYPES[0], region: 'Busoga', department: p.department, projectTitle: p.title, teamSize: p.teamSize,
+      startDate: iso(reg), endDate: iso(endDate), objective: p.objective, indicator: p.indicator, numeratorDef: p.numeratorDef,
+      denominatorDef: p.denominatorDef, target: p.target, problem: p.problem
+    });
+    p.changes.forEach(([m, change, improved, comments], ci) => {
+      const d = new Date(Date.UTC(start.getUTCFullYear(), startMonth + Number(m), 6 + ci));
+      if (d > today) return;
+      qij.push({ id: `qij-demo-${pi}-c${ci}`, ts: d.toISOString(), date: iso(d), items: {}, entryType: JOURNAL_ENTRY_TYPES[1], project: label,
+        change: String(change), changeStart: iso(d), changeEnd: null, improved: String(improved), changeComments: comments ? String(comments) : null });
+    });
+    const span = Math.min(p.startBack + p.endAhead, p.startBack);
+    for (let m = 0; m <= span; m++) {
+      const d = new Date(Date.UTC(start.getUTCFullYear(), startMonth + m, 26));
+      if (d > today) break;
+      const denominator = 30 + Math.floor(rnd() * 25);
+      const pct = clamp((p.start + ((p.end - p.start) * m) / Math.max(1, span) + (rnd() - 0.5) * 8) / 100);
+      const notes = m === 0 ? 'Baseline month before any change was tested.' : m === span ? 'Latest month: gains sustained.' : null;
+      const effects = m === Math.floor(span / 2) ? 'Staff report better teamwork and pride in the results shown at the monthly review.' : null;
+      qij.push({ id: `qij-demo-${pi}-m${m}`, ts: d.toISOString(), date: iso(d), items: {}, entryType: JOURNAL_ENTRY_TYPES[2], project: label,
+        month: iso(d), numerator: Math.round(denominator * pct), denominator, indicatorNotes: notes, effects });
+    }
+  });
+
+  return { hsr, fives, hh, ipcBasic, ipcMoh, hfqap, qij };
 }

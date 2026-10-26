@@ -650,6 +650,63 @@ var FORM_DEFS = [
         '10.13 Reporting system for adverse events and medical errors', '10.14 Occupational health and safety programme'] },
       { type: 'paragraph', key: 'gaps', title: 'Key gaps and agreed improvement actions', required: false }
     ])
+  },
+
+  /* 7. QI documentation journal ---------------------------------------- */
+  {
+    key: 'qij',
+    tab: 'QI Journal',
+    short: 'QI Documentation Journal',
+    title: 'QI Documentation Journal: Jinja RRH and Busoga Region',
+    description: 'Online version of the Documentation Journal for QI activities. Register each improvement project once, ' +
+      'then record every change the team tests (Part 2) and the indicator numerator and denominator each month (Part 3). ' +
+      'The RCQI dashboard turns the entries into the journal page and its annotated graph. Text entered here is shown ' +
+      'on the dashboard, so please do not include patient names, hospital numbers or other identifying details. Team ' +
+      'names are kept in the master sheet only.',
+    confirmation: 'Thank you. Your journal entry has been recorded and will appear on the RCQI dashboard shortly.',
+    items: [
+      { type: 'mc', key: 'entryType', title: 'What would you like to record?', required: true,
+        options: ['Register a new QI project', 'Record a change tested', 'Record monthly results'],
+        routes: ['sec_reg', 'sec_change', 'sec_month'],
+        help: 'Register a project once (journal header and Part 1). Record each change tested (Part 2) and each month of results (Part 3) against the registered project.' },
+      { type: 'section', key: 'sec_reg', title: 'Register a QI project',
+        help: 'Journal header and Part 1: the improvement objective, its indicator and the problem being addressed.' },
+      { type: 'mc', key: 'facility', title: 'Name of the facility', required: true, options: [RCQI.hospital], other: true },
+      { type: 'dropdown', key: 'district', title: 'District', required: true, options: LISTS.districts },
+      { type: 'mc', key: 'region', title: 'Region', required: true, options: ['Busoga'], other: true },
+      { type: 'mc', key: 'department', title: 'Department or unit (for hospital projects)', required: false, options: LISTS.departments, other: true },
+      { type: 'text', key: 'projectTitle', exportField: true, title: 'Short project title', required: true,
+        help: 'For example: Reduce hypothermia on admission to NICU. Teams choose this title when recording changes and monthly results, so please keep it unique within the facility.' },
+      { type: 'text', key: 'teamLeader', title: 'Team leader', required: true },
+      { type: 'paragraph', key: 'teamMembers', countAs: 'teamSize', title: 'Team members', required: false, help: 'One name per line. Names stay in the master sheet; the dashboard shows only the team size.' },
+      { type: 'date', key: 'startDate', title: 'Start date for the improvement project', required: true },
+      { type: 'date', key: 'endDate', title: 'Planned end date', required: false },
+      { type: 'paragraph', key: 'objective', exportField: true, title: 'Improvement objective', required: true },
+      { type: 'text', key: 'indicator', exportField: true, title: 'Indicator for the objective', required: true },
+      { type: 'text', key: 'numeratorDef', exportField: true, title: 'Numerator: what is counted', required: true },
+      { type: 'text', key: 'denominatorDef', exportField: true, title: 'Denominator: counted out of what', required: true },
+      { type: 'number', key: 'target', title: 'Target for the indicator (%)', required: false, min: 0, max: 100 },
+      { type: 'paragraph', key: 'problem', exportField: true, title: 'Description of the problem', required: true,
+        help: 'Briefly describe the problem being addressed and the gaps between the current situation and your improvement objective. State the differences between the MoH standard of care and current practice, and describe some of the challenges with the current situation.' },
+      { type: 'section', key: 'sec_change', goTo: 'SUBMIT', title: 'Part 2: Changes worksheet',
+        help: 'Record each change the team has tried in order to achieve the improvement objective, whether effective or not, with its start and end dates so that the results can be annotated.' },
+      { type: 'dropdown', key: 'project_c', as: 'project', dynamic: 'projects', title: 'Which QI project is this change for?', required: true, options: ['No projects registered yet'] },
+      { type: 'paragraph', key: 'change', exportField: true, title: 'Planned and tested change', required: true, help: 'Use one or two sentences to describe the change tested.' },
+      { type: 'date', key: 'changeStart', title: 'Start date of the change', required: true },
+      { type: 'date', key: 'changeEnd', title: 'End date of the change (if applicable)', required: false },
+      { type: 'mc', key: 'improved', title: 'Was any improvement registered?', required: true, options: ['Yes', 'No', 'Too early to tell'] },
+      { type: 'paragraph', key: 'changeComments', exportField: true, title: 'Comments on the change', required: false, help: 'Note any potential reasons why the change did or did not yield improvement.' },
+      { type: 'section', key: 'sec_month', goTo: 'SUBMIT', title: 'Part 3: Monthly results',
+        help: 'Record the numerator and denominator of the indicator for one month. The dashboard plots the percentage and annotates the graph with the changes tested.' },
+      { type: 'dropdown', key: 'project_m', as: 'project', dynamic: 'projects', title: 'Which QI project are these results for?', required: true, options: ['No projects registered yet'] },
+      { type: 'date', key: 'month', title: 'Month of measurement', required: true, help: 'Any date within the month.' },
+      { type: 'number', key: 'numerator', title: 'Numerator for the month', required: true, min: 0, max: 100000 },
+      { type: 'number', key: 'denominator', title: 'Denominator for the month', required: true, min: 1, max: 100000 },
+      { type: 'paragraph', key: 'indicatorNotes', exportField: true, title: 'Notes on the indicator', required: false,
+        help: 'Any additional comments on the performance of the indicator, including anything from the changes worksheet or the graph that might explain the trend.' },
+      { type: 'paragraph', key: 'effects', exportField: true, title: 'Other observed effects and lessons learnt', required: false,
+        help: 'Effects, positive or negative, observed as a result of the QI effort: feedback from patients, changes in performance or motivation, improved efficiency, or the story of a patient helped. Do not include names or identifying details.' }
+    ]
   }
 ];
 
@@ -677,18 +734,7 @@ function setupRCQI() {
 
   var links = {};
   FORM_DEFS.forEach(function (def) {
-    var form = buildForm_(def);
-    form.setDestination(FormApp.DestinationType.SPREADSHEET, ss.getId());
-    DriveApp.getFileById(form.getId()).moveTo(folder);
-    var sheet = waitForFormSheet_(ss.getId(), [form.getId(), form.getPublishedUrl().split('/d/e/')[1].split('/')[0]]);
-    sheet.setName(def.tab);
-    styleHeader_(sheet);
-    if (def.extras) addExtraColumns_(sheet, def.extras);
-    var published = form.getPublishedUrl();
-    var shortUrl = published;
-    try { shortUrl = form.shortenFormUrl(published); } catch (err) { Logger.log('Short link unavailable: ' + err); }
-    links[def.key] = { id: form.getId(), url: published, shortUrl: shortUrl, editUrl: form.getEditUrl() };
-    Logger.log('Created form: ' + def.title);
+    links[def.key] = createLinkedForm_(def, ss.getId(), folder);
   });
 
   props.setProperties({
@@ -705,6 +751,47 @@ function setupRCQI() {
   showLinks();
 }
 
+/** Creates one form, links it to the master sheet in its own named tab and returns its links. */
+function createLinkedForm_(def, ssId, folder) {
+  var form = buildForm_(def);
+  form.setDestination(FormApp.DestinationType.SPREADSHEET, ssId);
+  DriveApp.getFileById(form.getId()).moveTo(folder);
+  var sheet = waitForFormSheet_(ssId, [form.getId(), form.getPublishedUrl().split('/d/e/')[1].split('/')[0]]);
+  sheet.setName(def.tab);
+  styleHeader_(sheet);
+  if (def.extras) addExtraColumns_(sheet, def.extras);
+  var published = form.getPublishedUrl();
+  var shortUrl = published;
+  try { shortUrl = form.shortenFormUrl(published); } catch (err) { Logger.log('Short link unavailable: ' + err); }
+  Logger.log('Created form: ' + def.title);
+  return { id: form.getId(), url: published, shortUrl: shortUrl, editUrl: form.getEditUrl() };
+}
+
+/**
+ * Adds any form defined in FORM_DEFS that does not exist yet (for example the QI Documentation Journal)
+ * without touching the existing forms or their data. Safe to run more than once.
+ */
+function addMissingForms() {
+  var props = PropertiesService.getScriptProperties();
+  var ssId = props.getProperty('SPREADSHEET_ID');
+  if (!ssId) throw new Error('Run setupRCQI first.');
+  var folder = DriveApp.getFolderById(props.getProperty('FOLDER_ID'));
+  var links = JSON.parse(props.getProperty('FORM_LINKS') || '{}');
+  var added = [];
+  FORM_DEFS.forEach(function (def) {
+    if (links[def.key]) return;
+    links[def.key] = createLinkedForm_(def, ssId, folder);
+    added.push(def.short);
+  });
+  props.setProperty('FORM_LINKS', JSON.stringify(links));
+  if (added.length) {
+    writeReadMe_(SpreadsheetApp.openById(ssId), links);
+    CacheService.getScriptCache().remove('payload');
+  }
+  Logger.log(added.length ? 'Added: ' + added.join(', ') : 'No missing forms.');
+  showLinks();
+}
+
 function buildForm_(def) {
   var form = FormApp.create(def.title);
   addLogo_(form);
@@ -712,7 +799,16 @@ function buildForm_(def) {
   form.setConfirmationMessage(def.confirmation || 'Thank you. Your submission has been recorded for the RCQI dashboard.');
   form.setProgressBar(true);
   form.setShowLinkToRespondAgain(true);
-  def.items.forEach(function (it) { addItem_(form, it); });
+  var created = {};
+  def.items.forEach(function (it) { created[it.key || it.title] = addItem_(form, it); });
+  // Branching: route each answer of a routing question to its section.
+  def.items.forEach(function (it) {
+    if (!it.routes) return;
+    var item = created[it.key];
+    item.setChoices(it.options.map(function (label, i) {
+      return item.createChoice(label, created[it.routes[i]]);
+    }));
+  });
   return form;
 }
 
@@ -746,6 +842,8 @@ function addItem_(form, it) {
     case 'section':
       item = form.addPageBreakItem().setTitle(it.title);
       if (it.help) item.setHelpText(it.help);
+      // goTo SUBMIT ends the previous section with Submit instead of running on into this one.
+      if (it.goTo === 'SUBMIT') item.setGoToPage(FormApp.PageNavigationType.SUBMIT);
       return item;
     case 'mc':
       item = form.addMultipleChoiceItem().setTitle(it.title).setChoiceValues(it.options);
@@ -849,7 +947,7 @@ function writeReadMe_(ss, links) {
     ['Purpose', 'Single source for the Regional Continuous Quality Improvement (RCQI) dashboard of Jinja Regional Referral Hospital.'],
     ['Important', 'Do not rename tabs, reorder form questions or edit question titles once data collection has started. The dashboard reads columns by their titles and item codes.'],
     ['HSR follow-up', 'The QI Committee updates the columns Reference No., QI Review Status, QI Action Taken and Date Closed on the HSR Reports tab. New reports receive a reference number automatically.'],
-    ['Privacy', 'Free text (descriptions, causes, names and phone numbers) stays in this sheet and is never sent to the public dashboard.'],
+    ['Privacy', 'Free text from the HSR and the assessment forms (descriptions, causes, comments), all names and phone numbers stay in this sheet and are never sent to the dashboard. QI Journal narratives (objective, problem, changes and notes) are published on the dashboard QI Journal page; team names are not.'],
     ['', ''],
     ['Form', 'Share link']
   ];
@@ -887,6 +985,7 @@ function onRcqiFormSubmit(e) {
   if (!e || !e.range) return;
   CacheService.getScriptCache().remove('payload');
   var sheet = e.range.getSheet();
+  if (sheet.getName() === 'QI Journal') { refreshJournalProjects(); return; }
   if (sheet.getName() !== 'HSR Reports') return;
   var lock = LockService.getScriptLock();
   lock.waitLock(20000);
@@ -908,6 +1007,37 @@ function onRcqiFormSubmit(e) {
   } finally {
     lock.releaseLock();
   }
+}
+
+/** The label teams pick for a registered project: "Facility: Short project title". */
+function projectLabel_(rec) {
+  return String(rec.facility || 'Unknown facility').trim() + ': ' + String(rec.projectTitle || 'Untitled project').trim();
+}
+
+/** Rebuilds the project drop-down lists in the QI Journal form from the registered projects. */
+function refreshJournalProjects() {
+  var props = PropertiesService.getScriptProperties();
+  var links = JSON.parse(props.getProperty('FORM_LINKS') || '{}');
+  var def = FORM_DEFS.filter(function (d) { return d.key === 'qij'; })[0];
+  if (!links.qij || !def) return;
+  var sheet = SpreadsheetApp.openById(props.getProperty('SPREADSHEET_ID')).getSheetByName(def.tab);
+  var parsed = parseValues_(def, sheet ? sheet.getDataRange().getValues() : [[]], RCQI.timezone);
+  var labels = [];
+  parsed.records.forEach(function (r) {
+    if (String(r.entryType || '').indexOf('Register') === 0) {
+      var label = projectLabel_(r);
+      if (labels.indexOf(label) === -1) labels.push(label);
+    }
+  });
+  labels.sort();
+  var form = FormApp.openById(links.qij.id);
+  def.items.forEach(function (it) {
+    if (it.dynamic !== 'projects') return;
+    form.getItems(FormApp.ItemType.LIST).forEach(function (item) {
+      if (item.getTitle() === it.title) item.asListItem().setChoiceValues(labels.length ? labels : it.options);
+    });
+  });
+  Logger.log('QI Journal project list: ' + labels.length + ' project(s).');
 }
 
 /* ------------------------------------------------------------------------ */
@@ -993,9 +1123,10 @@ function buildHeaderMap_(def) {
     }
     var textual = it.type === 'text' || it.type === 'paragraph';
     map[it.title] = {
-      key: it.code || it.key,
+      key: it.code || it.as || it.key,
       kind: it.code ? 'coded' : (it.codes ? 'codes' : it.type),
       mergeInto: it.mergeInto,
+      countAs: it.countAs,
       exportField: it.exportField !== undefined ? it.exportField : !textual
     };
   });
@@ -1070,13 +1201,18 @@ function parseValues_(def, values, tz) {
     if (blank) continue;
     var rec = { id: def.key + '-' + (r + 1), items: {} };
     cols.forEach(function (c) {
+      if (c.spec.countAs) {
+        var raw = row[c.idx];
+        rec[c.spec.countAs] = raw ? String(raw).split(/[\n,;]+/).filter(function (x) { return x.trim(); }).length : null;
+      }
       if (!c.spec.exportField) return;
       var val = convert_(c.spec.kind, row[c.idx], tz);
       if (c.spec.kind === 'coded') {
         if (val !== null) rec.items[c.spec.key] = val;
       } else if (c.spec.mergeInto) {
         rec[c.spec.mergeInto] = (rec[c.spec.mergeInto] || []).concat(val || []);
-      } else {
+      } else if (val !== null || rec[c.spec.key] === undefined) {
+        // Two questions can feed one field (for example the journal's project lists); a blank never overwrites a value.
         rec[c.spec.key] = val;
       }
     });

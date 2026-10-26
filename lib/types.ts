@@ -1,6 +1,6 @@
-export type FormKey = 'hsr' | 'fives' | 'hh' | 'ipcBasic' | 'ipcMoh' | 'hfqap';
+export type FormKey = 'hsr' | 'fives' | 'hh' | 'ipcBasic' | 'ipcMoh' | 'hfqap' | 'qij';
 
-export const FORM_KEYS: FormKey[] = ['hsr', 'fives', 'hh', 'ipcBasic', 'ipcMoh', 'hfqap'];
+export const FORM_KEYS: FormKey[] = ['hsr', 'fives', 'hh', 'ipcBasic', 'ipcMoh', 'hfqap', 'qij'];
 
 export interface BaseRec {
   id: string;
@@ -81,6 +81,34 @@ export interface HfqapRec extends BaseRec {
   s_m6?: number | null; s_m7?: number | null; s_m8?: number | null; s_m9?: number | null; s_m10?: number | null;
 }
 
+/** One entry in the QI Documentation Journal form: a project registration, a change tested or a month of results. */
+export interface QijRec extends BaseRec {
+  entryType?: string | null;
+  region?: string | null;
+  department?: string | null;
+  projectTitle?: string | null;
+  teamSize?: number | null;
+  startDate?: string | null;
+  endDate?: string | null;
+  objective?: string | null;
+  indicator?: string | null;
+  numeratorDef?: string | null;
+  denominatorDef?: string | null;
+  target?: number | null;
+  problem?: string | null;
+  project?: string | null;
+  change?: string | null;
+  changeStart?: string | null;
+  changeEnd?: string | null;
+  improved?: string | null;
+  changeComments?: string | null;
+  month?: string | null;
+  numerator?: number | null;
+  denominator?: number | null;
+  indicatorNotes?: string | null;
+  effects?: string | null;
+}
+
 export interface FormMeta {
   title: string;
   short: string;
@@ -96,6 +124,7 @@ export interface Dataset {
   ipcBasic: IpcBasicRec[];
   ipcMoh: IpcMohRec[];
   hfqap: HfqapRec[];
+  qij: QijRec[];
 }
 
 export interface Payload {

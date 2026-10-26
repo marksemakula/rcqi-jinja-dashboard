@@ -67,7 +67,9 @@ export function filterDataset(data: Dataset, f: Filters, today = new Date()): Da
     hh: applyFilters(data.hh, f, 'ward', today),
     ipcBasic: applyFilters(data.ipcBasic, f, undefined, today),
     ipcMoh: applyFilters(data.ipcMoh, f, undefined, today),
-    hfqap: applyFilters(data.hfqap, f, undefined, today)
+    hfqap: applyFilters(data.hfqap, f, undefined, today),
+    // Journal entries are filtered at project level on the QI Journal page, so every month stays in each journal.
+    qij: data.qij
   };
 }
 
@@ -75,7 +77,7 @@ export function optionsFrom(data: Dataset) {
   const districts = new Set<string>();
   const facilities = new Set<string>();
   const departments = new Set<string>();
-  const all: BaseRec[] = [...data.hsr, ...data.fives, ...data.hh, ...data.ipcBasic, ...data.ipcMoh, ...data.hfqap];
+  const all: BaseRec[] = [...data.hsr, ...data.fives, ...data.hh, ...data.ipcBasic, ...data.ipcMoh, ...data.hfqap, ...data.qij];
   for (const r of all) {
     if (r.district) districts.add(r.district);
     if (r.facility) facilities.add(r.facility);
@@ -83,11 +85,12 @@ export function optionsFrom(data: Dataset) {
   for (const r of data.hsr) if (r.department) departments.add(r.department);
   for (const r of data.fives) if (r.department) departments.add(r.department);
   for (const r of data.hh) if (r.ward) departments.add(r.ward);
+  for (const r of data.qij) if (r.department) departments.add(r.department);
   const sort = (s: Set<string>) => Array.from(s).sort((a, b) => a.localeCompare(b));
   return { districts: sort(districts), facilities: sort(facilities), departments: sort(departments) };
 }
 
-export const emptyDataset = (): Dataset => ({ hsr: [], fives: [], hh: [], ipcBasic: [], ipcMoh: [], hfqap: [] });
+export const emptyDataset = (): Dataset => ({ hsr: [], fives: [], hh: [], ipcBasic: [], ipcMoh: [], hfqap: [], qij: [] });
 
 export function normaliseDataset(data?: Partial<Dataset>): Dataset {
   const e = emptyDataset();
@@ -95,9 +98,9 @@ export function normaliseDataset(data?: Partial<Dataset>): Dataset {
   const fix = <T extends BaseRec>(rows?: T[]) => (rows || []).map((r) => ({ ...r, items: r.items || {}, facility: r.facility ? r.facility.trim() : r.facility }));
   return {
     hsr: fix(data.hsr), fives: fix(data.fives), hh: fix(data.hh),
-    ipcBasic: fix(data.ipcBasic), ipcMoh: fix(data.ipcMoh), hfqap: fix(data.hfqap)
+    ipcBasic: fix(data.ipcBasic), ipcMoh: fix(data.ipcMoh), hfqap: fix(data.hfqap), qij: fix(data.qij)
   };
 }
 
 export const datasetSize = (d: Dataset) =>
-  d.hsr.length + d.fives.length + d.hh.length + d.ipcBasic.length + d.ipcMoh.length + d.hfqap.length;
+  d.hsr.length + d.fives.length + d.hh.length + d.ipcBasic.length + d.ipcMoh.length + d.hfqap.length + d.qij.length;

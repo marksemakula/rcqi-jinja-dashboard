@@ -14,7 +14,8 @@ const ABOUT: Record<FormKey, { name: string; who: string; when: string; text: st
   hh: { name: 'Hand Hygiene Observation', who: 'Trained IPC observers', when: 'At least monthly per ward', text: 'Totals from a WHO five moments observation session for one professional category, with optional moment breakdown.' },
   ipcBasic: { name: 'Basic IPC Assessment', who: 'IPC focal persons and supervisors', when: 'Quarterly per facility', text: 'Seventy-seven Yes or No items across twelve standards, each rated Red, Amber or Green, with an overall RAG rating.' },
   ipcMoh: { name: 'IPC Facility Assessment Tool (MoH 2024)', who: 'Facility IPC team or external assessors', when: 'Quarterly per facility', text: 'Eight thematic areas from IPC programme to built environment, including PPE availability, waste management and device processing.' },
-  hfqap: { name: 'HFQAP Facility Assessment', who: 'District and regional supervisors', when: 'Quarterly or at each assessment round', text: 'Module scores from the MoH HFQAP Facility Assessment Tool and the standards not met, giving the overall percentage and star rating.' }
+  hfqap: { name: 'HFQAP Facility Assessment', who: 'District and regional supervisors', when: 'Quarterly or at each assessment round', text: 'Module scores from the MoH HFQAP Facility Assessment Tool and the standards not met, giving the overall percentage and star rating.' },
+  qij: { name: 'QI Documentation Journal', who: 'QI teams and work improvement teams', when: 'Register once; record each change and every month', text: 'The online Documentation Journal for QI activities: project header and Part 1, the changes worksheet (Part 2) and monthly numerator and denominator (Part 3).' }
 };
 
 const METHODS = [
@@ -23,6 +24,7 @@ const METHODS = [
   ['5S', 'Sum of eighteen items scored 0 to 3 (waste segregation scored 0 or 3). Domain and grand total percentages use the maximum marks of the sheet: 12, 9, 15, 9 and 9, total 54.'],
   ['Basic IPC', 'Yes scores 1 and No scores 0, except soap and water interruptions where No is the desirable answer. N/A items are excluded and thresholds scaled. Overall RAG is the colour with the highest count across the eleven core standards; ties take the lower colour. Linen is shown but excluded, as instructed in the tool.'],
   ['IPC tool (MoH 2024)', 'Compliant answers score 1. Graded answers score 1, 0.5 or 0 (for example, IPC on the management agenda at most meetings scores 0.5). PPE stockout items score in reverse. N/A items are excluded. Area and overall scores are the share of points available.'],
+  ['QI Journal', 'Each month the indicator is the numerator divided by the denominator. If a month is entered twice, the later entry replaces the earlier one. Changes are numbered by start date and marked on the graph in the month they started. Baseline is the first month recorded. Team names stay in the master sheet.'],
   ['HFQAP', 'Module percentage is the criteria met divided by the criteria expected for the facility level (HC II 211, HC III 249, HC IV 283, General Hospital and RRH 290; private facilities score health financing out of 7). Star 0 below 55%, Star 1 55 to 64%, Star 2 65 to 74%, Star 3 75 to 84%, Star 4 85 to 94%, Star 5 95% and above.']
 ];
 

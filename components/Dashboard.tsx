@@ -9,6 +9,7 @@ import Ipc from './tabs/Ipc';
 import FiveS from './tabs/FiveS';
 import Hfqap from './tabs/Hfqap';
 import Forms from './tabs/Forms';
+import Journal from './tabs/Journal';
 import { TABS, type TabId, type TabProps } from './tabs/shared';
 import { Select } from './ui';
 import { buildDemo } from '@/lib/demo';
@@ -22,6 +23,7 @@ const ICONS: Record<TabId, string> = {
   ipc: 'M3 3h14v14H3zM10 6v8M6 10h8',
   fives: 'M3 4h14M3 8h10M3 12h14M3 16h8',
   hfqap: 'M10 2l2.4 5 5.6.8-4 3.9.9 5.5L10 14.6l-4.9 2.6.9-5.5-4-3.9 5.6-.8z',
+  journal: 'M4 2h11v16H4zM7 2v16M10 6h3M10 9h3',
   forms: 'M5 2h7l4 4v12H5zm7 0v4h4M8 10h5M8 13h5'
 };
 
@@ -100,7 +102,7 @@ export default function Dashboard() {
     }
   }
 
-  const ActiveTab = { overview: Overview, safety: Safety, hand: HandHygiene, ipc: Ipc, fives: FiveS, hfqap: Hfqap, forms: Forms }[tab];
+  const ActiveTab = { overview: Overview, safety: Safety, hand: HandHygiene, ipc: Ipc, fives: FiveS, hfqap: Hfqap, journal: Journal, forms: Forms }[tab];
   const updated = payload?.generatedAt ? new Date(payload.generatedAt).toLocaleTimeString('en-GB', { timeZone: 'Africa/Kampala', hour: '2-digit', minute: '2-digit' }) : null;
 
   return (
