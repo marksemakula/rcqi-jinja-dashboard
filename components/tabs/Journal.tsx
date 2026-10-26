@@ -24,7 +24,7 @@ function runChart(p: JournalProject): Opt {
   const targetLine = p.target !== null ? [{
     yAxis: p.target,
     lineStyle: { color: palette.khakiDark, type: 'dashed', width: 1.5 },
-    label: { formatter: `Target ${p.target}%`, color: palette.khakiDark, fontFamily: FONT, fontSize: 11, position: 'insideEndTop' }
+    label: { formatter: `Target\n${p.target}%`, color: palette.khakiDark, fontFamily: FONT, fontSize: 11, lineHeight: 14, position: 'end', distance: 16 }
   }] : [];
   return {
     tooltip: axisTooltip({
@@ -36,7 +36,8 @@ function runChart(p: JournalProject): Opt {
         return `<b>Month ${i} (${shortMonth(key)})</b><br/>${m ? `${m.numerator} of ${m.denominator} = ${fmtPct(m.pct, 1)}` : 'No result recorded'}${started.length ? `<br/><br/>Change started:<br/>${started.join('<br/>')}` : ''}`;
       }
     }),
-    grid: grid({ top: 36, right: 24 }),
+    // The target label sits in the right margin so it never covers the latest data label.
+    grid: grid({ top: 36, right: p.target !== null ? 76 : 24 }),
     xAxis: categoryAxis(p.axis.map((k, i) => `M${i}\n${shortMonth(k)}`), { boundaryGap: false, axisLabel: { color: palette.inkMuted, fontFamily: FONT, fontSize: 10.5, interval: 0 } }),
     yAxis: pctAxis(),
     series: [lineSeries({
