@@ -5,8 +5,9 @@
  *
  * How to use
  *   1. Run setupRCQI() once. It creates a Drive folder, the master spreadsheet,
- *      six Google Forms linked to their own tabs, the HSR reference trigger and
- *      an API token.
+ *      seven Google Forms linked to their own tabs, the HSR reference trigger and
+ *      an API token. On an existing installation, run addMissingForms() instead
+ *      to add any new form, then publish a new version of the web app.
  *   2. Deploy this project as a web app (Execute as: Me, Who has access: Anyone).
  *   3. Give the web app URL and the token (run showLinks() to print them) to the
  *      dashboard as RCQI_API_URL and RCQI_API_TOKEN. The dashboard reads data by
@@ -715,7 +716,7 @@ var FORM_DEFS = [
 /* ------------------------------------------------------------------------ */
 
 /**
- * Creates the folder, the master spreadsheet, the six forms and the trigger.
+ * Creates the folder, the master spreadsheet, the seven forms and the trigger.
  * Safe to run twice: a second run only prints the existing links.
  */
 function setupRCQI() {
