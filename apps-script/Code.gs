@@ -25,8 +25,8 @@ var RCQI = {
   schema: 1,
   headerColour: '#3B4420',
   headerText: '#F4F5EC',
-  // Jinja RRH logo, served by the dashboard. Shown at the top of every form.
-  logoUrl: 'https://rcqi-jinja-dashboard.vercel.app/jrrh-logo-800.png'
+  // Jinja RRH logo from the public GitHub repository. Shown at the top of every form.
+  logoUrl: 'https://raw.githubusercontent.com/marksemakula/rcqi-jinja-dashboard/main/public/jrrh-logo-800.png'
 };
 
 var LISTS = {
