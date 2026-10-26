@@ -19,7 +19,7 @@ const ICONS: Record<TabId, string> = {
   overview: 'M3 13h6V3H3zm0 8h6v-6H3zm8 0h6V11h-6zm0-18v6h6V3z',
   safety: 'M10 2l7 3v5c0 4.4-3 7.6-7 9-4-1.4-7-4.6-7-9V5zm0 5v4m0 3v.5',
   hand: 'M6 10V5a1.5 1.5 0 013 0v4m0-5a1.5 1.5 0 013 0v5m0-4a1.5 1.5 0 013 0v6c0 3.3-2.2 6-5.5 6S5 15.5 4 13l-1.5-3a1.5 1.5 0 012.6-1.4L6 10',
-  ipc: 'M10 2a8 8 0 100 16 8 8 0 000-16zm0 4v8m-4-4h8',
+  ipc: 'M3 3h14v14H3zM10 6v8M6 10h8',
   fives: 'M3 4h14M3 8h10M3 12h14M3 16h8',
   hfqap: 'M10 2l2.4 5 5.6.8-4 3.9.9 5.5L10 14.6l-4.9 2.6.9-5.5-4-3.9 5.6-.8z',
   forms: 'M5 2h7l4 4v12H5zm7 0v4h4M8 10h5M8 13h5'
@@ -116,7 +116,7 @@ export default function Dashboard() {
         <nav aria-label="Dashboard sections">
           {TABS.map((t) => (
             <button type="button" key={t.id} className={`nav-item${tab === t.id ? ' active' : ''}`} onClick={() => go(t.id)} aria-current={tab === t.id ? 'page' : undefined}>
-              <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d={ICONS[t.id]} fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d={ICONS[t.id]} fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="square" strokeLinejoin="miter" /></svg>
               <span>{t.label}</span>
             </button>
           ))}
@@ -130,7 +130,7 @@ export default function Dashboard() {
       <div className="main">
         <header className="topbar">
           <button type="button" className="menu-btn" onClick={() => setMenuOpen((m) => !m)} aria-label="Open navigation" aria-expanded={menuOpen}>
-            <svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true"><path d="M3 5h14M3 10h14M3 15h14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
+            <svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true"><path d="M3 5h14M3 10h14M3 15h14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square" /></svg>
           </button>
           <Image src="/jrrh-logo.png" alt="" width={40} height={40} className="top-logo" aria-hidden="true" />
           <div className="title-block">
@@ -151,7 +151,7 @@ export default function Dashboard() {
 
         {banner && (
           <div className={`banner ${banner.tone}`} role="status">
-            <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><circle cx="10" cy="10" r="8" fill="none" stroke="currentColor" strokeWidth="1.6" /><path d="M10 9v5M10 6.2v.3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
+            <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><rect x="2.5" y="2.5" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.6" /><path d="M10 9v5M10 6.2v.3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square" /></svg>
             <span>{banner.text}</span>
             {banner.action && <button type="button" className="btn small" onClick={banner.action.run}>{banner.action.label}</button>}
           </div>

@@ -11,6 +11,7 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@fontsource/ubuntu": "5.2.8",
     "echarts": "5.5.1",
     "echarts-for-react": "3.0.2",
     "next": "14.2.35",

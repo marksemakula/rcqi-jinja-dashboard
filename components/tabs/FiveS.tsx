@@ -61,7 +61,7 @@ export default function FiveS({ data, forms }: TabProps) {
       xAxis: categoryAxis(FIVE_S_DOMAINS.map((d) => d.name), { position: 'top' }),
       yAxis: categoryAxis(sorted.map((l) => unitOf(l.rec)), { inverse: true, axisLabel: { color: palette.inkSoft, fontFamily: FONT, fontSize: 11, width: 150, overflow: 'truncate' } }),
       visualMap: heatVisualMap(0, 100, { text: ['100%', '0%'] }),
-      series: [{ type: 'heatmap', data: cells, label: { show: true, formatter: (p: { value: number[] }) => `${p.value[2]}%`, fontFamily: FONT, fontSize: 11, fontWeight: 700 }, itemStyle: { borderColor: palette.card, borderWidth: 3, borderRadius: 6 }, emphasis: { itemStyle: { borderColor: palette.ag900, borderWidth: 2 } } }]
+      series: [{ type: 'heatmap', data: cells, label: { show: true, formatter: (p: { value: number[] }) => `${p.value[2]}%`, fontFamily: FONT, fontSize: 11, fontWeight: 700 }, itemStyle: { borderColor: palette.card, borderWidth: 3, borderRadius: 0 }, emphasis: { itemStyle: { borderColor: palette.ag900, borderWidth: 2 } } }]
     };
     return { option, sorted };
   }, [latest]);
@@ -92,7 +92,7 @@ export default function FiveS({ data, forms }: TabProps) {
       grid: grid({ right: 48 }),
       xAxis: pctAxis(),
       yAxis: categoryAxis(vals.map((x) => FIVE_S_ITEMS[x.c]).reverse(), { axisLabel: { color: palette.inkSoft, fontFamily: FONT, fontSize: 11, width: 200, overflow: 'truncate' } }),
-      series: [hBarSeries({ data: vals.map((x) => Math.round(x.v)).reverse(), itemStyle: { color: palette.ag500, borderRadius: [0, 4, 4, 0] }, label: { show: true, position: 'right', formatter: '{c}%', color: palette.inkSoft, fontFamily: FONT, fontSize: 11 } })]
+      series: [hBarSeries({ data: vals.map((x) => Math.round(x.v)).reverse(), itemStyle: { color: palette.ag500, borderRadius: 0 }, label: { show: true, position: 'right', formatter: '{c}%', color: palette.inkSoft, fontFamily: FONT, fontSize: 11 } })]
     };
     return { option, table: { columns: ['Item', 'Description', 'Average (% of maximum)'], rows: vals.map((x) => [x.c, FIVE_S_ITEMS[x.c], Math.round(x.v)]) } };
   }, [latest]);

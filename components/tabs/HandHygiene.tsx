@@ -75,7 +75,7 @@ export default function HandHygiene({ data, forms }: TabProps) {
       xAxis: categoryAxis(HH_MOMENTS.map((x) => `M${x.id}`)),
       yAxis: pctAxis(),
       series: [barSeries({
-        data: m.map((x) => ({ value: x.ratio === null ? 0 : Math.round(x.ratio * 10) / 10, itemStyle: { color: (x.ratio ?? 0) >= target ? palette.ag700 : palette.ag300, borderRadius: [4, 4, 0, 0] } })),
+        data: m.map((x) => ({ value: x.ratio === null ? 0 : Math.round(x.ratio * 10) / 10, itemStyle: { color: (x.ratio ?? 0) >= target ? palette.ag700 : palette.ag300, borderRadius: 0 } })),
         label: { show: true, position: 'top', formatter: '{c}%', color: palette.inkSoft, fontFamily: FONT, fontSize: 11 },
         markLine: targetLine(target)
       })]
@@ -95,7 +95,7 @@ export default function HandHygiene({ data, forms }: TabProps) {
       yAxis: valueAxis({ minInterval: 1 }),
       series: [
         barSeries({ name: 'Hand rub', stack: 'mix', data: per.map((x) => x.hr), itemStyle: { color: pair[0], borderColor: palette.card, borderWidth: 1 } }),
-        barSeries({ name: 'Hand wash', stack: 'mix', data: per.map((x) => x.hw), itemStyle: { color: pair[1], borderRadius: [4, 4, 0, 0], borderColor: palette.card, borderWidth: 1 } })
+        barSeries({ name: 'Hand wash', stack: 'mix', data: per.map((x) => x.hw), itemStyle: { color: pair[1], borderRadius: 0, borderColor: palette.card, borderWidth: 1 } })
       ]
     };
     return { option, table: { columns: ['Month', 'Hand rub', 'Hand wash'], rows: months.map((mm, i) => [shortMonth(mm), per[i].hr, per[i].hw]) } };

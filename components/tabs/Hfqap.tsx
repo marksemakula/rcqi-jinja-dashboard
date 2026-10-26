@@ -31,7 +31,7 @@ export default function Hfqap({ data, all, forms, focus }: TabProps) {
       grid: grid(),
       xAxis: categoryAxis(STAR_BANDS.map((b) => `Star ${b.star}`)),
       yAxis: valueAxis({ minInterval: 1 }),
-      series: [barSeries({ data: counts.map((c, i) => ({ value: c, itemStyle: { color: STAR_COLOURS[i], borderRadius: [4, 4, 0, 0] } })), label: { show: true, position: 'top', color: palette.inkSoft, fontFamily: FONT } })]
+      series: [barSeries({ data: counts.map((c, i) => ({ value: c, itemStyle: { color: STAR_COLOURS[i], borderRadius: 0 } })), label: { show: true, position: 'top', color: palette.inkSoft, fontFamily: FONT } })]
     };
     return { option, table: { columns: ['Star rating', 'Score band', 'Facilities'], rows: STAR_BANDS.map((b, i) => [`Star ${b.star}`, b.label, counts[i]]) } };
   }, [latest]);
@@ -60,7 +60,7 @@ export default function Hfqap({ data, all, forms, focus }: TabProps) {
       xAxis: categoryAxis(HFQAP_MODULES.map((m) => m.short), { position: 'top', axisLabel: { color: palette.inkMuted, fontFamily: FONT, fontSize: 10, interval: 0, rotate: 30 } }),
       yAxis: categoryAxis(sorted.map((l) => l.rec.facility || ''), { inverse: true, axisLabel: { color: palette.inkSoft, fontFamily: FONT, fontSize: 11, width: 170, overflow: 'truncate' } }),
       visualMap: heatVisualMap(0, 100, { text: ['100%', '0%'] }),
-      series: [{ type: 'heatmap', data: cells, label: { show: true, fontFamily: FONT, fontSize: 10, fontWeight: 700 }, itemStyle: { borderColor: palette.card, borderWidth: 3, borderRadius: 6 }, emphasis: { itemStyle: { borderColor: palette.ag900, borderWidth: 2 } } }]
+      series: [{ type: 'heatmap', data: cells, label: { show: true, fontFamily: FONT, fontSize: 10, fontWeight: 700 }, itemStyle: { borderColor: palette.card, borderWidth: 3, borderRadius: 0 }, emphasis: { itemStyle: { borderColor: palette.ag900, borderWidth: 2 } } }]
     };
     return { option, sorted, table: { columns: ['Facility', ...HFQAP_MODULES.map((m) => `${m.short} (%)`)], rows: sorted.map((l) => [l.rec.facility, ...l.s.modules.map((m) => Math.round(m.pct))]) } };
   }, [latest]);

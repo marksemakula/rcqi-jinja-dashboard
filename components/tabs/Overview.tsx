@@ -64,7 +64,7 @@ export default function Overview({ data, go }: TabProps) {
         visualMap: heatVisualMap(0, max, { text: [`${max} submissions`, '0'] }),
         series: [{
           type: 'heatmap', data: cells.map(([x, y, v]) => heatCell(x, y, v, 0, max)), label: { show: months.length <= 14, fontFamily: FONT, fontSize: 10, formatter: (p: { value: number[] }) => (p.value[2] ? String(p.value[2]) : '') },
-          itemStyle: { borderColor: palette.card, borderWidth: 2, borderRadius: 4 },
+          itemStyle: { borderColor: palette.card, borderWidth: 2, borderRadius: 0 },
           emphasis: { itemStyle: { borderColor: palette.ag900, borderWidth: 2 } }
         }]
       },
@@ -96,7 +96,7 @@ export default function Overview({ data, go }: TabProps) {
         series: [{
           type: 'heatmap', data: cells.map(([x, y, v]) => heatCell(x, y, v, 0, 100)),
           label: { show: true, fontFamily: FONT, fontSize: 11, fontWeight: 700, formatter: (p: { value: (number | string)[] }) => (p.value[2] === '-' ? '' : `${p.value[2]}%`) },
-          itemStyle: { borderColor: palette.card, borderWidth: 3, borderRadius: 6 },
+          itemStyle: { borderColor: palette.card, borderWidth: 3, borderRadius: 0 },
           emphasis: { itemStyle: { borderColor: palette.ag900, borderWidth: 2 } }
         }]
       },

@@ -47,7 +47,7 @@ export default function Ipc({ data, all, forms, focus }: TabProps) {
       series: [{
         type: 'heatmap', data: cells,
         label: { show: true, fontFamily: FONT, fontSize: 11, fontWeight: 700, formatter: (p: { value: number[] }) => RAG_LETTER[p.value[2]] },
-        itemStyle: { borderColor: palette.card, borderWidth: 3, borderRadius: 6 },
+        itemStyle: { borderColor: palette.card, borderWidth: 3, borderRadius: 0 },
         emphasis: { itemStyle: { borderColor: palette.ag900, borderWidth: 2 } }
       }]
     };
@@ -149,7 +149,7 @@ export default function Ipc({ data, all, forms, focus }: TabProps) {
       xAxis: categoryAxis(keys.map((k) => PPE_ITEMS[k]), { position: 'top', axisLabel: { color: palette.inkMuted, fontFamily: FONT, fontSize: 10, interval: 0, rotate: 35 } }),
       yAxis: categoryAxis(mohOptions, { inverse: true, axisLabel: { color: palette.inkSoft, fontFamily: FONT, fontSize: 11, width: 170, overflow: 'truncate' } }),
       visualMap: { type: 'piecewise', orient: 'horizontal', left: 'center', bottom: 0, itemWidth: 14, itemHeight: 10, textStyle: { fontFamily: FONT, color: palette.inkSoft, fontSize: 11 }, pieces: [{ value: 2, label: 'Available', color: palette.ag600 }, { value: 1, label: 'Not available', color: palette.sand }, { value: 0, label: 'Not recorded', color: palette.ag50 }] },
-      series: [{ type: 'heatmap', data: cells, label: { show: true, fontFamily: FONT, fontSize: 10, formatter: (p: { value: number[] }) => ['', 'No', 'Yes'][p.value[2]] }, itemStyle: { borderColor: palette.card, borderWidth: 3, borderRadius: 5 } }]
+      series: [{ type: 'heatmap', data: cells, label: { show: true, fontFamily: FONT, fontSize: 10, formatter: (p: { value: number[] }) => ['', 'No', 'Yes'][p.value[2]] }, itemStyle: { borderColor: palette.card, borderWidth: 3, borderRadius: 0 } }]
     };
     return { option, table: { columns: ['Facility', ...keys.map((k) => PPE_ITEMS[k])], rows: mohScores.map((m) => [m.rec.facility, ...keys.map((k) => m.rec.items[`B8${k}`] || '')]) } };
   }, [mohScores, mohOptions]);
@@ -163,8 +163,8 @@ export default function Ipc({ data, all, forms, focus }: TabProps) {
       xAxis: pctAxis(),
       yAxis: categoryAxis(rows.map((m) => m.rec.facility || ''), { axisLabel: { color: palette.inkSoft, fontFamily: FONT, fontSize: 11, width: 170, overflow: 'truncate' } }),
       series: [
-        hBarSeries({ name: 'Hand hygiene stations', data: rows.map((m) => Math.round(m.s.hhCoverage ?? 0)), itemStyle: { color: pair[0], borderRadius: [0, 4, 4, 0] } }),
-        hBarSeries({ name: 'Colour-coded bins', data: rows.map((m) => Math.round(m.s.binCoverage ?? 0)), itemStyle: { color: pair[1], borderRadius: [0, 4, 4, 0] } })
+        hBarSeries({ name: 'Hand hygiene stations', data: rows.map((m) => Math.round(m.s.hhCoverage ?? 0)), itemStyle: { color: pair[0], borderRadius: 0 } }),
+        hBarSeries({ name: 'Colour-coded bins', data: rows.map((m) => Math.round(m.s.binCoverage ?? 0)), itemStyle: { color: pair[1], borderRadius: 0 } })
       ]
     };
     return { option, height: Math.max(220, 60 + rows.length * 44), empty: !rows.length, table: { columns: ['Facility', 'Service points', 'Hand hygiene station coverage (%)', 'Bin coverage (%)', 'Self-reported HH compliance (%)'], rows: rows.map((m) => [m.rec.facility, m.rec.sdp ?? null, Math.round(m.s.hhCoverage ?? 0), Math.round(m.s.binCoverage ?? 0), m.rec.hhRate ?? null]) } };

@@ -79,4 +79,4 @@ Requires Node.js 18.18 or later. `npm run build` produces the production build t
 
 ## Design
 
-Army green palette (`lib/palette.ts`, mirrored in `app/globals.css`), Urbanist for text and Cinzel for headings. Red and amber appear only as reserved RAG status colours and are always paired with an icon and a label.
+Army green palette (`lib/palette.ts`, mirrored in `app/globals.css`), Ubuntu for all text (dashboard, charts and the master sheet) and square corners on every box and chart mark. Red and amber appear only as reserved RAG status colours and are always paired with an icon and a label.

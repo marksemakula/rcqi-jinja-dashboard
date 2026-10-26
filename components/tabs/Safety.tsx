@@ -71,7 +71,7 @@ export default function Safety({ data, forms }: TabProps) {
       const c = countBy(src.filter((r) => r.outcome === o), (r) => monthKey(r.date));
       return barSeries({
         name: OUTCOME_SHORT[o], stack: 'outcome', data: months.map((m) => c.get(m) || 0),
-        itemStyle: { color: sel.outcome && sel.outcome !== o ? palette.ag100 : [ordinal5[0], ordinal5[2], ordinal5[4]][i], borderRadius: i === 2 ? [4, 4, 0, 0] : 0, borderColor: palette.card, borderWidth: 1 }
+        itemStyle: { color: sel.outcome && sel.outcome !== o ? palette.ag100 : [ordinal5[0], ordinal5[2], ordinal5[4]][i], borderRadius: 0, borderColor: palette.card, borderWidth: 1 }
       });
     });
     return {
@@ -110,7 +110,7 @@ export default function Safety({ data, forms }: TabProps) {
         series: [{
           type: 'heatmap', data: cells.map(([x, y, v]) => heatCell(x, y, v, 0, max)),
           label: { show: true, fontFamily: FONT, fontSize: 11, formatter: (p: { value: number[] }) => (p.value[2] ? String(p.value[2]) : '') },
-          itemStyle: { borderColor: palette.card, borderWidth: 2, borderRadius: 4 }
+          itemStyle: { borderColor: palette.card, borderWidth: 2, borderRadius: 0 }
         }]
       },
       table: { columns: ['Location', ...HSR_TIMEFRAMES], rows: locs.map((l, li) => [l, ...HSR_TIMEFRAMES.map((_, ti) => cells[ti * locs.length + li][2])]) }
@@ -131,7 +131,7 @@ export default function Safety({ data, forms }: TabProps) {
         grid: grid(),
         xAxis: categoryAxis(bands, { axisLabel: { color: palette.inkMuted, fontFamily: FONT, fontSize: 10.5, interval: 0 } }),
         yAxis: valueAxis({ minInterval: 1 }),
-        series: [barSeries({ data: counts.map((v, i) => ({ value: v, itemStyle: { color: ordinal5[i + 1], borderRadius: [4, 4, 0, 0] } })), label: { show: true, position: 'top', color: palette.inkSoft, fontFamily: FONT } })]
+        series: [barSeries({ data: counts.map((v, i) => ({ value: v, itemStyle: { color: ordinal5[i + 1], borderRadius: 0 } })), label: { show: true, position: 'top', color: palette.inkSoft, fontFamily: FONT } })]
       },
       table: { columns: ['Age of open report', 'Reports'], rows: bands.map((b, i) => [b, counts[i]]) }
     };

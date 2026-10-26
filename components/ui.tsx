@@ -112,15 +112,15 @@ export function ChartCard({ title, subtitle, option, height = 300, onClick, tabl
           )}
           {table && !empty && (
             <button type="button" className="icon-btn" onClick={() => downloadCsv(title, table)} title="Download CSV" aria-label={`Download ${title} as CSV`}>
-              <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M10 3v9m0 0l-4-4m4 4l4-4M4 15h12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M10 3v9m0 0l-4-4m4 4l4-4M4 15h12" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square" strokeLinejoin="miter" /></svg>
             </button>
           )}
           {option && !empty && (
             <button type="button" className="icon-btn" onClick={() => setExpanded((x) => !x)} title={expanded ? 'Close' : 'Expand'} aria-label={expanded ? 'Close expanded view' : `Expand ${title}`}>
               {expanded ? (
-                <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
+                <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square" /></svg>
               ) : (
-                <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M12 3h5v5M8 17H3v-5M17 3l-6 6M3 17l6-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true"><path d="M12 3h5v5M8 17H3v-5M17 3l-6 6M3 17l6-6" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square" strokeLinejoin="miter" /></svg>
               )}
             </button>
           )}
@@ -142,7 +142,7 @@ export function ChartCard({ title, subtitle, option, height = 300, onClick, tabl
 export function EmptyState({ text }: { text: string }) {
   return (
     <div className="empty">
-      <svg viewBox="0 0 48 48" width="40" height="40" aria-hidden="true"><rect x="8" y="10" width="32" height="28" rx="5" fill="none" stroke="currentColor" strokeWidth="2" /><path d="M14 30l6-7 5 5 9-10" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
+      <svg viewBox="0 0 48 48" width="40" height="40" aria-hidden="true"><rect x="8" y="10" width="32" height="28" rx="0" fill="none" stroke="currentColor" strokeWidth="2" /><path d="M14 30l6-7 5 5 9-10" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="square" strokeLinejoin="miter" /></svg>
       <p>{text}</p>
     </div>
   );
@@ -175,7 +175,7 @@ export function Sparkline({ values }: { values: number[] }) {
   const pts = values.map((v, i) => `${(i / (values.length - 1)) * w},${h - ((v - min) / (max - min || 1)) * (h - 4) - 2}`).join(' ');
   return (
     <svg className="spark" viewBox={`0 0 ${w} ${h}`} width={w} height={h} aria-hidden="true">
-      <polyline points={pts} fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="round" strokeLinecap="round" />
+      <polyline points={pts} fill="none" stroke="currentColor" strokeWidth="2" strokeLinejoin="miter" strokeLinecap="square" />
     </svg>
   );
 }
@@ -190,9 +190,9 @@ export function StatusTag({ tone, label }: { tone: 'good' | 'warn' | 'bad'; labe
 }
 
 function StatusIcon({ tone }: { tone: 'good' | 'warn' | 'bad' }) {
-  if (tone === 'good') return <svg viewBox="0 0 12 12" width="11" height="11" aria-hidden="true"><circle cx="6" cy="6" r="5" fill="currentColor" /><path d="M3.5 6.2l1.7 1.6 3.3-3.4" stroke="#FFFFFF" strokeWidth="1.5" fill="none" strokeLinecap="round" /></svg>;
+  if (tone === 'good') return <svg viewBox="0 0 12 12" width="11" height="11" aria-hidden="true"><rect x="1" y="1" width="10" height="10" fill="currentColor" /><path d="M3.5 6.2l1.7 1.6 3.3-3.4" stroke="#FFFFFF" strokeWidth="1.5" fill="none" strokeLinecap="square" /></svg>;
   if (tone === 'warn') return <svg viewBox="0 0 12 12" width="11" height="11" aria-hidden="true"><path d="M6 1l5 9.5H1z" fill="currentColor" /></svg>;
-  return <svg viewBox="0 0 12 12" width="11" height="11" aria-hidden="true"><rect x="1.5" y="1.5" width="9" height="9" rx="1.5" fill="currentColor" /></svg>;
+  return <svg viewBox="0 0 12 12" width="11" height="11" aria-hidden="true"><rect x="1.5" y="1.5" width="9" height="9" rx="0" fill="currentColor" /></svg>;
 }
 
 export function RagPill({ rag }: { rag: Rag | null }) {
@@ -241,7 +241,7 @@ export function Chips({ chips, onClear }: { chips: { key: string; label: string;
       {chips.map((c) => (
         <button type="button" key={c.key} className="chip" onClick={c.onRemove} aria-label={`Remove ${c.label}`}>
           {c.label}
-          <svg viewBox="0 0 12 12" width="10" height="10" aria-hidden="true"><path d="M3 3l6 6M9 3L3 9" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg>
+          <svg viewBox="0 0 12 12" width="10" height="10" aria-hidden="true"><path d="M3 3l6 6M9 3L3 9" stroke="currentColor" strokeWidth="1.6" strokeLinecap="square" /></svg>
         </button>
       ))}
       {onClear && chips.length > 1 && <button type="button" className="chip-clear" onClick={onClear}>Clear all</button>}
@@ -266,7 +266,7 @@ export function Drawer({ open, title, subtitle, onClose, children }: { open: boo
             {subtitle && <p className="card-sub">{subtitle}</p>}
           </div>
           <button type="button" className="icon-btn" onClick={onClose} aria-label="Close panel">
-            <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
+            <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square" /></svg>
           </button>
         </header>
         <div className="drawer-body">{children}</div>

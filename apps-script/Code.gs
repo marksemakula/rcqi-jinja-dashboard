@@ -25,6 +25,7 @@ var RCQI = {
   schema: 1,
   headerColour: '#3B4420',
   headerText: '#F4F5EC',
+  font: 'Ubuntu',
   // Jinja RRH logo from the public GitHub repository. Shown at the top of every form.
   logoUrl: 'https://raw.githubusercontent.com/marksemakula/rcqi-jinja-dashboard/main/public/jrrh-logo-800.png'
 };
@@ -808,9 +809,19 @@ function waitForFormSheet_(ssId, formIds) {
 
 function styleHeader_(sheet) {
   var width = Math.max(sheet.getLastColumn(), 1);
+  sheet.getRange(1, 1, sheet.getMaxRows(), sheet.getMaxColumns()).setFontFamily(RCQI.font);
   sheet.getRange(1, 1, 1, width)
     .setBackground(RCQI.headerColour).setFontColor(RCQI.headerText).setFontWeight('bold').setWrap(true);
   sheet.setFrozenRows(1);
+}
+
+/** Applies the Ubuntu typeface to every tab of the master sheet. Safe to run at any time. */
+function applyBrandFont() {
+  var ss = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID'));
+  ss.getSheets().forEach(function (sheet) {
+    sheet.getRange(1, 1, sheet.getMaxRows(), sheet.getMaxColumns()).setFontFamily(RCQI.font);
+  });
+  Logger.log('Font set to ' + RCQI.font + ' on ' + ss.getSheets().length + ' tabs.');
 }
 
 function addExtraColumns_(sheet, extras) {
@@ -844,6 +855,7 @@ function writeReadMe_(ss, links) {
   ];
   FORM_DEFS.forEach(function (def) { rows.push([def.short, links[def.key].shortUrl]); });
   sh.getRange(1, 1, rows.length, 2).setValues(rows);
+  sh.getRange(1, 1, sh.getMaxRows(), sh.getMaxColumns()).setFontFamily(RCQI.font);
   sh.getRange(1, 1).setFontSize(14).setFontWeight('bold').setFontColor(RCQI.headerColour);
   sh.getRange(7, 1, 1, 2).setBackground(RCQI.headerColour).setFontColor(RCQI.headerText).setFontWeight('bold');
   sh.setColumnWidth(1, 220);
