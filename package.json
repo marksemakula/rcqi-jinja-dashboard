@@ -1,0 +1,33 @@
+{
+  "name": "rcqi-jinja-dashboard",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Regional Continuous Quality Improvement (RCQI) dashboard for Jinja Regional Referral Hospital",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "echarts": "5.5.1",
+    "echarts-for-react": "3.0.2",
+    "next": "14.2.35",
+    "qrcode": "1.5.4",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "20.14.10",
+    "@types/qrcode": "1.5.5",
+    "@types/react": "18.3.3",
+    "@types/react-dom": "18.3.0",
+    "eslint": "8.57.0",
+    "eslint-config-next": "14.2.35",
+    "typescript": "5.4.5"
+  },
+  "engines": {
+    "node": ">=18.18"
+  }
+}
