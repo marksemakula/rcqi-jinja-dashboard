@@ -6,7 +6,7 @@ import type { TabProps } from './shared';
 import { FIVE_S_DOMAINS, HFQAP_MODULES, HH_MOMENTS, BASIC_IPC_DOMAINS } from '@/lib/catalogue';
 import { categoryAxis, FONT, grid, heatCell, heatVisualMap, tooltip } from '@/lib/chart';
 import { countBy, fmtInt, fmtPct, latestBy, mean, monthKey, monthRange, shortMonth } from '@/lib/format';
-import { buildJournal } from '@/lib/journal';
+import { buildJournal, entriesFor, filterProjects } from '@/lib/journal';
 import { palette } from '@/lib/palette';
 import { hhMoments, hhTotals, scoreBasicIpc, scoreFiveS, scoreHfqap, scoreMohIpc } from '@/lib/scoring';
 
@@ -20,14 +20,17 @@ const TOOLS = [
   { key: 'qij', label: 'QI journal entries', tab: 'journal' }
 ] as const;
 
-export default function Overview({ data, go }: TabProps) {
+export default function Overview({ data, filters, go }: TabProps) {
   const months = useMemo(() => {
     const keys = [...data.hsr, ...data.hh, ...data.fives, ...data.ipcBasic, ...data.ipcMoh, ...data.hfqap].map((r) => monthKey(r.date)).filter(Boolean).sort();
     // Journal entries are not period-filtered, so they never stretch the month axis beyond the selected period.
     return keys.length ? monthRange(keys[0], keys[keys.length - 1]) : [];
   }, [data]);
 
-  const journal = useMemo(() => buildJournal(data.qij), [data.qij]);
+  // Journal entries skip the period filter (each project keeps all its months) but follow the district, facility and
+  // department filters at project level, as on the QI Journal page.
+  const qijEntries = useMemo(() => entriesFor(data.qij, filters), [data.qij, filters]);
+  const journal = useMemo(() => filterProjects(buildJournal(data.qij), filters), [data.qij, filters]);
 
   const kpis = useMemo(() => {
     const hsrByMonth = countBy(data.hsr, (r) => monthKey(r.date));
@@ -53,7 +56,7 @@ export default function Overview({ data, go }: TabProps) {
     const cells: [number, number, number][] = [];
     let max = 1;
     TOOLS.forEach((t, ti) => {
-      const counts = countBy(data[t.key] as { date?: string | null }[], (r) => monthKey(r.date));
+      const counts = countBy((t.key === 'qij' ? qijEntries : data[t.key]) as { date?: string | null }[], (r) => monthKey(r.date));
       months.forEach((m, mi) => {
         const v = counts.get(m) || 0;
         max = Math.max(max, v);
@@ -75,7 +78,7 @@ export default function Overview({ data, go }: TabProps) {
       },
       table: { columns: ['Tool', ...months.map(shortMonth)], rows: TOOLS.map((t, ti) => [t.label, ...months.map((_, mi) => cells[ti * months.length + mi][2])]) }
     };
-  }, [data, months]);
+  }, [data, months, qijEntries]);
 
   const matrix = useMemo(() => {
     const facilities = Array.from(new Set([...data.ipcBasic, ...data.ipcMoh, ...data.hfqap].map((r) => r.facility).filter(Boolean) as string[])).sort();

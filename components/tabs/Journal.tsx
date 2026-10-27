@@ -5,10 +5,9 @@ import { useEffect, useMemo, useState } from 'react';
 import Chart from '../Chart';
 import { ChartCard, DataTable, EmptyState, Kpi, SectionTitle, StatusTag, type TableData } from '../ui';
 import type { TabProps } from './shared';
-import { ALL } from '@/lib/filters';
 import { axisTooltip, categoryAxis, FONT, grid, hBarSeries, legend, lineSeries, pctAxis, tooltip, type Opt } from '@/lib/chart';
 import { fmtDate, fmtPct, shortMonth } from '@/lib/format';
-import { buildJournal, type JournalProject } from '@/lib/journal';
+import { buildJournal, filterProjects, type JournalProject } from '@/lib/journal';
 import { pair, palette } from '@/lib/palette';
 
 const r1 = (v: number | null) => (v === null ? null : Math.round(v * 10) / 10);
@@ -49,11 +48,7 @@ function runChart(p: JournalProject): Opt {
 }
 
 export default function Journal({ all, filters, forms, focus }: TabProps) {
-  const projects = useMemo(() => buildJournal(all.qij).filter((p) =>
-    (filters.district === ALL || p.district === filters.district) &&
-    (filters.facility === ALL || p.facility === filters.facility) &&
-    (filters.department === ALL || p.department === filters.department)
-  ), [all.qij, filters]);
+  const projects = useMemo(() => filterProjects(buildJournal(all.qij), filters), [all.qij, filters]);
   const [label, setLabel] = useState<string | null>(null);
   useEffect(() => { if (focus) setLabel(focus); }, [focus]);
   const sel = projects.find((p) => p.label === label) || projects[0] || null;

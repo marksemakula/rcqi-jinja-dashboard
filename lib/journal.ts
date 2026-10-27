@@ -2,6 +2,7 @@
  * QI Documentation Journal: turns the three kinds of journal entry (project registrations, changes tested and
  * monthly results) into one journal per project, mirroring the paper Documentation Journal for QI activities.
  */
+import { ALL, type Filters } from './filters';
 import type { QijRec } from './types';
 
 export type EntryKind = 'project' | 'change' | 'month' | 'team' | 'unknown';
@@ -155,4 +156,27 @@ export function buildJournal(records: QijRec[], today = new Date().toISOString()
     });
   }
   return out.sort((a, b) => a.facility.localeCompare(b.facility) || a.title.localeCompare(b.title));
+}
+
+type PlaceFilters = Pick<Filters, 'district' | 'facility' | 'department'>;
+
+/** True when a district, facility or department is chosen (the period never hides a project's months). */
+export const placeFiltered = (f: PlaceFilters) => f.district !== ALL || f.facility !== ALL || f.department !== ALL;
+
+/** The projects whose registration matches the chosen district, facility and department. */
+export function filterProjects(projects: JournalProject[], f: PlaceFilters): JournalProject[] {
+  return projects.filter((p) =>
+    (f.district === ALL || p.district === f.district) &&
+    (f.facility === ALL || p.facility === f.facility) &&
+    (f.department === ALL || p.department === f.department));
+}
+
+/** The journal entries for the chosen district, facility and department: every entry that belongs to a matching project. */
+export function entriesFor(records: QijRec[], f: PlaceFilters): QijRec[] {
+  if (!placeFiltered(f)) return records;
+  const keep = new Set(filterProjects(buildJournal(records), f).map((p) => p.label));
+  return records.filter((r) => {
+    const label = entryKind(r) === 'project' ? projectLabel(r) : r.project;
+    return !!label && keep.has(label);
+  });
 }
