@@ -12,6 +12,7 @@ import Forms from './tabs/Forms';
 import Journal from './tabs/Journal';
 import { TABS, type TabId, type TabProps } from './tabs/shared';
 import { Select } from './ui';
+import FacilitySearch from './FacilitySearch';
 import { buildDemo } from '@/lib/demo';
 import { ALL, DEFAULT_FILTERS, datasetSize, filterDataset, normaliseDataset, optionsFrom, PRESETS, type Filters, type Preset } from '@/lib/filters';
 import type { Mode, Payload } from '@/lib/types';
@@ -84,6 +85,10 @@ export default function Dashboard() {
   const dataset = mode === 'live' ? live : demo;
   const filtered = useMemo(() => filterDataset(dataset, filters), [dataset, filters]);
   const opts = useMemo(() => optionsFrom(dataset), [dataset]);
+  // The facility search lists the facilities in the chosen district (all districts when none is chosen).
+  const facilityOptions = useMemo(() => opts.facilities
+    .filter((f) => filters.district === ALL || opts.facilityDistricts[f] === filters.district)
+    .map((f) => ({ name: f, district: opts.facilityDistricts[f] || null })), [opts, filters.district]);
 
   const go = useCallback((t: TabId, f?: string) => {
     setTab(t);
@@ -100,12 +105,13 @@ export default function Dashboard() {
   const changed = filters.preset !== DEFAULT_FILTERS.preset || filters.district !== ALL || filters.facility !== ALL || filters.department !== ALL;
 
   let banner: { tone: 'info' | 'warn'; text: string; action?: { label: string; run: () => void } } | null = null;
+  const DEMO_NOTE = ' Facility names are real Busoga facilities from DHIS2, but every figure is invented and does not describe them.';
   if (!loading || payload) {
     if (mode === 'demo') {
-      if (failed) banner = { tone: 'warn', text: 'The live RCQI Google Sheet could not be reached, so demonstration data is shown.', action: { label: 'Try again', run: load } };
-      else if (forceDemo) banner = { tone: 'info', text: 'You are viewing demonstration data for training purposes.', action: connected ? { label: 'Show live data', run: () => setForceDemo(false) } : undefined };
-      else if (connected) banner = { tone: 'info', text: 'The forms are live and connected. No submissions have been received yet, so illustrative demonstration data is shown. Live results replace it automatically after the first submission.' };
-      else banner = { tone: 'info', text: 'Demonstration data: the live RCQI Google Sheet has not been connected to this deployment yet.' };
+      if (failed) banner = { tone: 'warn', text: 'The live RCQI Google Sheet could not be reached, so demonstration data is shown.' + DEMO_NOTE, action: { label: 'Try again', run: load } };
+      else if (forceDemo) banner = { tone: 'info', text: 'You are viewing demonstration data for training purposes.' + DEMO_NOTE, action: connected ? { label: 'Show live data', run: () => setForceDemo(false) } : undefined };
+      else if (connected) banner = { tone: 'info', text: 'The forms are live and connected. No submissions have been received yet, so illustrative demonstration data is shown. Live results replace it automatically after the first submission.' + DEMO_NOTE };
+      else banner = { tone: 'info', text: 'Demonstration data: the live RCQI Google Sheet has not been connected to this deployment yet.' + DEMO_NOTE };
     }
   }
 
@@ -174,8 +180,9 @@ export default function Dashboard() {
                 {PRESETS.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
               </select>
             </label>
-            <Select label="District" value={filters.district} options={opts.districts} onChange={(v) => setF({ district: v })} allLabel="All districts" />
-            <Select label="Facility" value={filters.facility} options={opts.facilities} onChange={(v) => setF({ facility: v })} allLabel="All facilities" />
+            <Select label="District" value={filters.district} options={opts.districts} allLabel="All districts"
+              onChange={(v) => setF({ district: v, facility: v === ALL || opts.facilityDistricts[filters.facility] === v ? filters.facility : ALL })} />
+            <FacilitySearch value={filters.facility} options={facilityOptions} onChange={(v) => setF({ facility: v })} allLabel="All facilities" />
             <Select label="Department or ward" value={filters.department} options={opts.departments} onChange={(v) => setF({ department: v })} allLabel="All departments" />
             {changed && <button type="button" className="btn ghost small reset" onClick={() => setFilters(DEFAULT_FILTERS)}>Reset filters</button>}
           </div>

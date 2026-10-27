@@ -319,3 +319,38 @@ nav { display: flex; flex-direction: column; gap: 2px; }
   * { animation: none !important; transition: none !important; }
 }
 .journal-tab .card .data-table td:first-child { white-space: normal; }
+
+/* Searchable facility filter ------------------------------------------------ */
+.search-select { max-width: 340px; flex: 1.5 1 220px; }
+.combo { position: relative; }
+.combo input {
+  width: 100%; border: 1px solid var(--border); border-radius: 0; padding: 8px 34px 8px 12px; font: inherit; font-weight: 500; font-size: 14px; color: var(--ink);
+  background-color: var(--surface);
+  background-image: linear-gradient(45deg, transparent 50%, var(--ag-600) 50%), linear-gradient(135deg, var(--ag-600) 50%, transparent 50%);
+  background-position: calc(100% - 17px) 55%, calc(100% - 12px) 55%; background-size: 5px 5px; background-repeat: no-repeat;
+  text-overflow: ellipsis;
+}
+.combo input:hover { border-color: var(--ag-300); }
+.combo input:focus { outline: 2px solid var(--ag-400); outline-offset: -1px; background-color: var(--card); }
+.combo input::placeholder { color: var(--ink-muted); }
+.combo-list { position: absolute; z-index: 40; top: calc(100% + 2px); left: 0; min-width: 100%; width: max-content; max-width: min(460px, 92vw); max-height: 340px; overflow-y: auto; margin: 0; padding: 4px 0; list-style: none; background: var(--card); border: 1px solid var(--ag-300); border-radius: 0; box-shadow: var(--shadow); }
+.combo-option { display: flex; justify-content: space-between; align-items: baseline; gap: 14px; padding: 8px 12px; cursor: pointer; font-size: 13.5px; color: var(--ink); }
+.combo-option.active { background: var(--ag-50); }
+.combo-option.chosen .combo-name { font-weight: 700; color: var(--ag-800); }
+.combo-district { color: var(--ink-muted); font-size: 12px; white-space: nowrap; }
+.combo-empty { padding: 10px 12px; color: var(--ink-muted); font-size: 13px; }
+@media (max-width: 600px) { .search-select { grid-column: 1 / -1; max-width: none; } .combo-list { max-width: calc(100vw - 32px); } }
+
+/* Facility matching card ---------------------------------------------------- */
+.match-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 0; margin: 0 16px 14px; border: 1px solid var(--border); }
+.match-stat { padding: 10px 12px; border-right: 1px solid var(--grid); }
+.match-stat:last-child { border-right: 0; }
+.match-stat dt { font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--ink-muted); }
+.match-stat dd { margin: 4px 0 0; font-size: 22px; font-weight: 700; color: var(--ag-800); }
+.match-stat.review dd, .match-stat.unmatched dd { color: var(--khaki-dark); }
+.facility-review .table-wrap { margin: 0 16px 16px; overflow-x: auto; }
+.filters .select select, .filters .combo input { height: 38px; line-height: 20px; }
+.search-select .combo-option span { text-transform: none; letter-spacing: normal; }
+.search-select .combo-name { font-size: 13.5px; font-weight: 500; color: var(--ink); }
+.search-select .combo-district { font-size: 12px; font-weight: 400; color: var(--ink-muted); }
+.facility-review .data-table th { padding: 9px 10px; font-size: 12px; font-weight: 700; color: var(--ag-800); white-space: nowrap; }

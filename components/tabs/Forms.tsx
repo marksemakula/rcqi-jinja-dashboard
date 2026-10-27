@@ -6,7 +6,7 @@ import { SectionTitle } from '../ui';
 import type { TabProps } from './shared';
 import { fmtDate } from '@/lib/format';
 import { palette } from '@/lib/palette';
-import { FORM_KEYS, type FormKey } from '@/lib/types';
+import { FORM_KEYS, type BaseRec, type FacilityMatch, type FormKey } from '@/lib/types';
 
 const ABOUT: Record<FormKey, { name: string; who: string; when: string; text: string }> = {
   hsr: { name: 'Patient Safety Report (HSR)', who: 'Any member of staff', when: 'Whenever a near miss or adverse event occurs', text: 'Captures near misses and adverse events: cadre, department, date and timeframe, location, who was harmed, category, type of event and outcome. Descriptions stay in the master sheet.' },
@@ -25,6 +25,7 @@ const METHODS = [
   ['Basic IPC', 'Yes scores 1 and No scores 0, except soap and water interruptions where No is the desirable answer. N/A items are excluded and thresholds scaled. Overall RAG is the colour with the highest count across the eleven core standards; ties take the lower colour. Linen is shown but excluded, as instructed in the tool.'],
   ['IPC tool (MoH 2024)', 'Compliant answers score 1. Graded answers score 1, 0.5 or 0 (for example, IPC on the management agenda at most meetings scores 0.5). PPE stockout items score in reverse. N/A items are excluded. Area and overall scores are the share of points available.'],
   ['QI Journal', 'Each month the indicator is the numerator divided by the denominator. If a month is entered twice, the later entry replaces the earlier one. Changes are numbered by start date and marked on the graph in the month they started. Baseline is the first month recorded. Team names and email addresses stay in the master sheet.'],
+  ['Facility matching', 'Facility forms ask for the district first, then list that district\'s facilities from DHIS2 (all 599 open Busoga facilities, pulled from the DHIS2 test instance on 27 October 2026). A name typed on the "not in the list" page is matched to DHIS2 by its words, allowing for abbreviations such as HC IV and small spelling slips, and is accepted only when the match is clear and the stated level agrees. Anything uncertain is flagged for a coordinator, whose choice in the DHIS2 facility column of the master sheet always wins.'],
   ['Notifications', 'After every QI Journal entry, the project\'s team email list and the active RCQI coordinators on the QI Notification List tab receive one email each, with the entry, the result against the target and a link to the project journal. Every send is recorded on the QI Notification Log tab.'],
   ['HFQAP', 'Module percentage is the criteria met divided by the criteria expected for the facility level (HC II 211, HC III 249, HC IV 283, General Hospital and RRH 290; private facilities score health financing out of 7). Star 0 below 55%, Star 1 55 to 64%, Star 2 65 to 74%, Star 3 75 to 84%, Star 4 85 to 94%, Star 5 95% and above.']
 ];
@@ -63,6 +64,40 @@ function QrCard({ k, url, responses, last }: { k: FormKey; url: string; response
   );
 }
 
+const MATCH_LABEL: Record<FacilityMatch, string> = {
+  selected: 'Picked from the DHIS2 list', matched: 'Typed name matched', confirmed: 'Confirmed by a coordinator',
+  review: 'Needs review', unmatched: 'Not in the DHIS2 list'
+};
+const FACILITY_FORMS: FormKey[] = ['fives', 'hh', 'ipcBasic', 'ipcMoh', 'hfqap', 'qij'];
+
+/** How each entry's facility was matched to DHIS2, and the entries a coordinator still needs to resolve. */
+function FacilityReview({ all }: { all: TabProps['all'] }) {
+  const rows = FACILITY_FORMS.flatMap((k) => (all[k] as BaseRec[]).filter((r) => r.facilityMatch).map((r) => ({ k, r })));
+  const count = (m: FacilityMatch) => rows.filter((x) => x.r.facilityMatch === m).length;
+  const needs = rows.filter((x) => x.r.facilityMatch === 'review' || x.r.facilityMatch === 'unmatched');
+  return (
+    <section className="card span-3 facility-review" aria-label="Facility matching with DHIS2">
+      <header className="card-head"><div><h3>Facility matching with DHIS2</h3>
+        <p className="card-sub">Every entry&apos;s facility is matched to the DHIS2 list for Busoga. Entries listed below need a coordinator to choose the right facility in the DHIS2 facility column of the master sheet.</p></div></header>
+      <dl className="match-stats">
+        {(Object.keys(MATCH_LABEL) as FacilityMatch[]).map((m) => <div key={m} className={`match-stat ${m}`}><dt>{MATCH_LABEL[m]}</dt><dd>{count(m).toLocaleString('en-GB')}</dd></div>)}
+      </dl>
+      {needs.length ? (
+        <div className="table-wrap">
+          <table className="data-table">
+            <thead><tr><th scope="col">Form</th><th scope="col">Facility as entered</th><th scope="col">District</th><th scope="col">Closest DHIS2 facility</th><th scope="col">Status</th></tr></thead>
+            <tbody>
+              {needs.map(({ k, r }) => (
+                <tr key={r.id}><td>{ABOUT[k].name}</td><td>{r.facilityEntered || r.facility}</td><td>{r.district || 'Not given'}</td><td>{r.facilitySuggestion || 'None found'}</td><td>{MATCH_LABEL[r.facilityMatch as FacilityMatch]}</td></tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : <p className="card-sub pad">All entries are matched to a DHIS2 facility.</p>}
+    </section>
+  );
+}
+
 export default function Forms({ all, forms, mode, generatedAt }: TabProps) {
   return (
     <div className="tab">
@@ -75,6 +110,7 @@ export default function Forms({ all, forms, mode, generatedAt }: TabProps) {
           return <QrCard key={k} k={k} url={url} responses={mode === 'live' ? rows.length : forms[k]?.responses ?? 0} last={mode === 'live' ? last : null} />;
         })}
       </div>
+      <FacilityReview all={all} />
       <section className="card span-3 method" aria-label="How the scores are calculated">
         <header className="card-head"><div><h3>How the scores are calculated</h3><p className="card-sub">Scoring follows the source tools held by the RCQI team at Jinja RRH.</p></div></header>
         <dl className="method-list">

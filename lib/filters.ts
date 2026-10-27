@@ -87,7 +87,10 @@ export function optionsFrom(data: Dataset) {
   for (const r of data.hh) if (r.ward) departments.add(r.ward);
   for (const r of data.qij) if (r.department) departments.add(r.department);
   const sort = (s: Set<string>) => Array.from(s).sort((a, b) => a.localeCompare(b));
-  return { districts: sort(districts), facilities: sort(facilities), departments: sort(departments) };
+  // Each facility's district (the DHIS2 district when the entry was matched), for the searchable facility filter.
+  const facilityDistricts: Record<string, string> = {};
+  for (const r of all) if (r.facility && r.district && !facilityDistricts[r.facility]) facilityDistricts[r.facility] = r.district;
+  return { districts: sort(districts), facilities: sort(facilities), departments: sort(departments), facilityDistricts };
 }
 
 export const emptyDataset = (): Dataset => ({ hsr: [], fives: [], hh: [], ipcBasic: [], ipcMoh: [], hfqap: [], qij: [] });

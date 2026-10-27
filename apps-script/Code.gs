@@ -6,7 +6,7 @@
  * How to use
  *   1. Run setupRCQI() once. It creates a Drive folder, the master spreadsheet,
  *      seven Google Forms linked to their own tabs, the HSR reference trigger and
- *      an API token; then run setupNotifications(). On an existing installation,
+ *      an API token, loads the DHIS2 facility list and the notification tabs. On an existing installation,
  *      run addMissingForms() to add a new form or upgradeForms() to add new
  *      questions to a live form, then publish a new version of the web app.
  *   2. Deploy this project as a web app (Execute as: Me, Who has access: Anyone).
@@ -37,7 +37,10 @@ var RCQI = {
   dashboardUrl: 'https://rcqi-jinja-dashboard.vercel.app',
   mailName: 'RCQI Jinja RRH',
   notifyTab: 'QI Notification List',
-  notifyLogTab: 'QI Notification Log'
+  notifyLogTab: 'QI Notification Log',
+  // Busoga facility list pulled from the DHIS2 test instance (hmis-tests.health.go.ug), kept in the public repository.
+  facilitiesUrl: 'https://raw.githubusercontent.com/marksemakula/rcqi-jinja-dashboard/main/data/dhis2-busoga-facilities.json',
+  facilitiesTab: 'DHIS2 Facilities'
 };
 
 var LISTS = {
@@ -64,13 +67,59 @@ function rows_(list) {
   return list.map(function (r) { return { code: r[0], text: r[1] }; });
 }
 
+var NOT_LISTED_ = 'My facility is not in this list';
+var BUSOGA_ = LISTS.districts.filter(function (d) { return !/^Other/.test(d); });
+
+function slug_(s) { return String(s).toLowerCase().replace(/[^a-z0-9]+/g, '_'); }
+function districtLabel_(d) { return d === 'Jinja City' ? d : d + ' District'; }
+
+/** Page 1 of every facility form: the district, which sends the respondent to that district's DHIS2 facility list. */
 function facilityBlock_() {
   return [
-    { type: 'dropdown', key: 'district', title: 'District', required: true, options: LISTS.districts },
-    { type: 'mc', key: 'facility', title: 'Health facility', required: true, options: [RCQI.hospital], other: true,
-      help: 'For any other facility, choose Other and type its full official name as it appears in the DHIS2 facility list.' }
+    { type: 'dropdown', key: 'district', title: 'District', required: true, options: LISTS.districts,
+      routes: LISTS.districts.map(function (d) { return /^Other/.test(d) ? 'sec_fac_other' : 'sec_fac_' + slug_(d); }),
+      help: 'Choose the district or city first. The next page lists its health facilities from DHIS2.' }
   ];
 }
+
+/**
+ * One page per Busoga district listing its DHIS2 facilities (filled from the DHIS2 Facilities tab), then a page for a
+ * facility that is not listed. Every listed facility continues to the section next; "not listed" goes to the typed name.
+ */
+function facilityPages_(next) {
+  var items = [];
+  BUSOGA_.forEach(function (d) {
+    items.push({ type: 'section', key: 'sec_fac_' + slug_(d), title: 'Health facility: ' + districtLabel_(d),
+      help: 'Health facilities registered in DHIS2 for ' + districtLabel_(d) + '.' });
+    items.push({ type: 'dropdown', key: 'fac_' + slug_(d), as: 'facilityPick', facilities: d, required: true,
+      title: 'Health facility in ' + districtLabel_(d), options: [NOT_LISTED_], routeAll: next, routeOther: 'sec_fac_other',
+      help: 'Choose the facility. If it is not in the list, choose "' + NOT_LISTED_ + '" and type its name on the next page.' });
+  });
+  items.push({ type: 'section', key: 'sec_fac_other', title: 'Health facility not in the list',
+    help: 'For a facility outside Busoga or one missing from the DHIS2 list. The RCQI team matches the name to DHIS2.' });
+  items.push({ type: 'text', key: 'facilityTyped', exportField: true, title: 'Name of the health facility', required: true,
+    help: 'Type the full official name, for example Nankoma Health Centre IV.' });
+  return items;
+}
+
+/** Inserts the facility pages after page 1 (before the first section), continuing to that section. */
+function withFacilityPages_(items) {
+  var at = -1;
+  for (var i = 0; i < items.length; i++) { if (items[i].type === 'section') { at = i; break; } }
+  if (at < 0) return items.concat(facilityPages_('SUBMIT'));
+  return items.slice(0, at).concat(facilityPages_(items[at].key || items[at].title), items.slice(at));
+}
+
+/** The typed facility question the district-first lists replace. Kept readable for older rows; removed from forms with no responses. */
+var RETIRED_FACILITY_ = [{ title: 'Health facility', type: 'mc', as: 'facilityLegacy' }];
+
+/** Columns the submit trigger fills on each facility tab; a coordinator corrects a facility by choosing it in DHIS2 facility. */
+var FACILITY_EXTRAS_ = [
+  { header: 'DHIS2 facility', key: 'dhis2Facility', exportField: false },
+  { header: 'DHIS2 district', key: 'dhis2District', exportField: false },
+  { header: 'DHIS2 UID', key: 'dhis2Uid', exportField: false },
+  { header: 'Facility match', key: 'facilityMatchNote', exportField: false }
+];
 
 var FORM_DEFS = [
   /* 1. Patient safety report ------------------------------------------- */
@@ -134,7 +183,10 @@ var FORM_DEFS = [
     description: 'Monitoring and evaluation of 5S activities in a department or unit: leadership for 5S-CQI-TQM, Sort, ' +
       'Set, Shine and Standardise. Score each item from 0 (poor) to 3 (good). Sub-totals and percentages are ' +
       'calculated automatically on the dashboard (full mark 54).',
-    items: [].concat(facilityBlock_(), [
+    facilityMapped: true,
+    retired: RETIRED_FACILITY_,
+    extras: FACILITY_EXTRAS_,
+    items: withFacilityPages_([].concat(facilityBlock_(), [
       { type: 'mc', key: 'department', title: 'Department/Unit', required: true, options: LISTS.departments, other: true },
       { type: 'date', key: 'date', title: 'Date of assessment', required: true },
       { type: 'text', key: 'evaluator', title: 'Name of evaluator', required: true },
@@ -178,7 +230,7 @@ var FORM_DEFS = [
           ['ST3', 'Photographs are used as evidence of 5S activities']
         ]) },
       { type: 'paragraph', key: 'comments', title: 'Comments and recommendations', required: false }
-    ])
+    ]))
   },
 
   /* 3. Hand hygiene observation ---------------------------------------- */
@@ -191,7 +243,10 @@ var FORM_DEFS = [
       'Observe openly for about 20 minutes (plus or minus 10 minutes), record each opportunity on the paper ' +
       'observation form, then submit the totals here. Submit one response for each professional category observed ' +
       'in the session. Compliance is calculated as hand hygiene actions divided by opportunities.',
-    items: [].concat(facilityBlock_(), [
+    facilityMapped: true,
+    retired: RETIRED_FACILITY_,
+    extras: FACILITY_EXTRAS_,
+    items: withFacilityPages_([].concat(facilityBlock_(), [
       { type: 'mc', key: 'ward', title: 'Ward/Unit observed', required: true, options: LISTS.departments, other: true },
       { type: 'dropdown', key: 'deptType', title: 'Department type (WHO classification)', required: true,
         options: ['Medical', 'Surgical', 'Mixed (medical and surgical)', 'Obstetrics and gynaecology', 'Paediatrics',
@@ -225,7 +280,7 @@ var FORM_DEFS = [
       { type: 'number', key: 'm4a', title: 'Moment 4, after touching a patient: actions performed (n)', required: false, min: 0, max: 1000 },
       { type: 'number', key: 'm5i', title: 'Moment 5, after touching patient surroundings: indications (n)', required: false, min: 0, max: 1000 },
       { type: 'number', key: 'm5a', title: 'Moment 5, after touching patient surroundings: actions performed (n)', required: false, min: 0, max: 1000 }
-    ])
+    ]))
   },
 
   /* 4. Basic IPC assessment -------------------------------------------- */
@@ -238,7 +293,10 @@ var FORM_DEFS = [
       'after checking the evidence listed for the standard. Use N/A only where an item genuinely does not apply. ' +
       'The dashboard calculates the score and the Red, Amber or Green (RAG) status of each standard, and the overall ' +
       'RAG status (the colour with the highest count; where counts tie, the lower colour applies).',
-    items: [].concat(facilityBlock_(), [
+    facilityMapped: true,
+    retired: RETIRED_FACILITY_,
+    extras: FACILITY_EXTRAS_,
+    items: withFacilityPages_([].concat(facilityBlock_(), [
       { type: 'date', key: 'date', title: 'Date of assessment', required: true },
       { type: 'text', key: 'village', title: 'City/Village', required: false },
       { type: 'text', key: 'assessor', title: 'Name of person conducting the assessment', required: true },
@@ -389,7 +447,7 @@ var FORM_DEFS = [
           ['HAI5', 'Is there a written protocol for HAI outbreak response?']
         ]) },
       { type: 'paragraph', key: 'comments', title: 'Comments and agreed actions', required: false }
-    ])
+    ]))
   },
 
   /* 5. MoH IPC facility assessment tool -------------------------------- */
@@ -402,7 +460,10 @@ var FORM_DEFS = [
       'self-administered by the facility IPC team (internal) or completed by an external assessor during support ' +
       'supervision. Verify each response against the evidence indicated. The dashboard scores each thematic area: ' +
       'a compliant answer scores 1, graded answers score 1, 0.5 or 0, and N/A items are excluded.',
-    items: [].concat(facilityBlock_(), [
+    facilityMapped: true,
+    retired: RETIRED_FACILITY_,
+    extras: FACILITY_EXTRAS_,
+    items: withFacilityPages_([].concat(facilityBlock_(), [
       { type: 'dropdown', key: 'level', title: 'Facility level', required: true, options: LISTS.levels },
       { type: 'dropdown', key: 'ownership', title: 'Facility ownership', required: true, options: LISTS.ownership },
       { type: 'mc', key: 'assessType', title: 'Type of assessment', required: true,
@@ -549,7 +610,7 @@ var FORM_DEFS = [
           ['B28', 'The facility has an identified safe isolation area where patients with highly infectious diseases can be kept']
         ]) },
       { type: 'paragraph', key: 'actions', title: 'Action points for the next quarter', required: false }
-    ])
+    ]))
   },
 
   /* 6. HFQAP facility assessment summary ------------------------------- */
@@ -563,7 +624,10 @@ var FORM_DEFS = [
       'standards that were not met. The dashboard calculates module percentages, the overall percentage and the star ' +
       'rating for the facility level (Star 0 below 55%, Star 1 55 to 64%, Star 2 65 to 74%, Star 3 75 to 84%, ' +
       'Star 4 85 to 94%, Star 5 95% and above).',
-    items: [].concat(facilityBlock_(), [
+    facilityMapped: true,
+    retired: RETIRED_FACILITY_,
+    extras: FACILITY_EXTRAS_,
+    items: withFacilityPages_([].concat(facilityBlock_(), [
       { type: 'dropdown', key: 'level', title: 'Facility level', required: true, options: LISTS.levels },
       { type: 'dropdown', key: 'ownership', title: 'Facility ownership', required: true, options: LISTS.ownership,
         help: 'Health financing is scored out of 9 for public facilities and out of 7 for private facilities.' },
@@ -659,7 +723,7 @@ var FORM_DEFS = [
         '10.11 Adequate waste disposal supplies and materials', '10.12 Refuse and medical waste disposal facilities',
         '10.13 Reporting system for adverse events and medical errors', '10.14 Occupational health and safety programme'] },
       { type: 'paragraph', key: 'gaps', title: 'Key gaps and agreed improvement actions', required: false }
-    ])
+    ]))
   },
 
   /* 7. QI documentation journal ---------------------------------------- */
@@ -675,16 +739,21 @@ var FORM_DEFS = [
       'names and email addresses are kept in the master sheet only. Everyone on a project\'s team email list receives a ' +
       'short email after each entry for that project.',
     confirmation: 'Thank you. Your journal entry has been recorded and will appear on the RCQI dashboard shortly.',
+    facilityMapped: true,
+    retired: [{ title: 'Name of the facility', type: 'mc', as: 'facilityLegacy' }],
+    extras: FACILITY_EXTRAS_,
     items: [
       { type: 'mc', key: 'entryType', title: 'What would you like to record?', required: true,
         options: ['Register a new QI project', 'Record a change tested', 'Record monthly results', 'Update the team email list'],
         routes: ['sec_reg', 'sec_change', 'sec_month', 'sec_team'],
         help: 'Register a project once (journal header and Part 1). Record each change tested (Part 2) and each month of results (Part 3) against the registered project. To update a project\'s details, register it again with the same facility and short title. Use the team email list option to add or remove people who receive notifications.' },
       { type: 'section', key: 'sec_reg', title: 'Register a QI project',
-        help: 'Journal header and Part 1: the improvement objective, its indicator and the problem being addressed.' },
-      { type: 'mc', key: 'facility', title: 'Name of the facility', required: true, options: [RCQI.hospital], other: true },
-      { type: 'dropdown', key: 'district', title: 'District', required: true, options: LISTS.districts },
-      { type: 'mc', key: 'region', title: 'Region', required: true, options: ['Busoga'], other: true },
+        help: 'Journal header and Part 1: the improvement objective, its indicator and the problem being addressed.' }
+    ].concat(facilityBlock_(), [
+      { type: 'mc', key: 'region', title: 'Region', required: true, options: ['Busoga'], other: true }
+    ], facilityPages_('sec_reg_details'), [
+      { type: 'section', key: 'sec_reg_details', title: 'Project details',
+        help: 'Journal header and Part 1: the team, the improvement objective, its indicator and the problem being addressed.' },
       { type: 'mc', key: 'department', title: 'Department or unit (for hospital projects)', required: false, options: LISTS.departments, other: true },
       { type: 'text', key: 'projectTitle', exportField: true, title: 'Short project title', required: true,
         help: 'For example: Reduce hypothermia on admission to NICU. Teams choose this title when recording changes and monthly results, so please keep it unique within the facility.' },
@@ -724,7 +793,7 @@ var FORM_DEFS = [
       { type: 'dropdown', key: 'project_t', as: 'project', dynamic: 'projects', title: 'Which QI project is this team update for?', required: true, options: ['No projects registered yet'] },
       { type: 'paragraph', key: 'emailsAdd', emails: true, title: 'Email addresses to add', required: false, help: 'One address per line, or separated by commas.' },
       { type: 'paragraph', key: 'emailsRemove', emails: true, title: 'Email addresses to remove', required: false, help: 'These people stop receiving notifications for this project.' }
-    ]
+    ])
   }
 ];
 
@@ -750,9 +819,10 @@ function setupRCQI() {
   var readMe = ss.getSheets()[0];
   readMe.setName('Read Me');
 
+  var directory = loadFacilityDirectory(SpreadsheetApp.openById(ss.getId()));
   var links = {};
   FORM_DEFS.forEach(function (def) {
-    links[def.key] = createLinkedForm_(def, ss.getId(), folder);
+    links[def.key] = createLinkedForm_(def, ss.getId(), folder, directory);
   });
 
   props.setProperties({
@@ -764,20 +834,22 @@ function setupRCQI() {
   });
 
   writeReadMe_(SpreadsheetApp.openById(ss.getId()), links);
+  setupNotifications();
   ScriptApp.newTrigger('onRcqiFormSubmit').forSpreadsheet(ss.getId()).onFormSubmit().create();
   Logger.log('Setup complete.');
   showLinks();
 }
 
 /** Creates one form, links it to the master sheet in its own named tab and returns its links. */
-function createLinkedForm_(def, ssId, folder) {
-  var form = buildForm_(def);
+function createLinkedForm_(def, ssId, folder, directory) {
+  var form = buildForm_(def, directory || []);
   form.setDestination(FormApp.DestinationType.SPREADSHEET, ssId);
   DriveApp.getFileById(form.getId()).moveTo(folder);
   var sheet = waitForFormSheet_(ssId, [form.getId(), form.getPublishedUrl().split('/d/e/')[1].split('/')[0]]);
   sheet.setName(def.tab);
   styleHeader_(sheet);
   if (def.extras) addExtraColumns_(sheet, def.extras);
+  if (def.facilityMapped) ensureFacilityColumns_(sheet, SpreadsheetApp.openById(ssId));
   var published = form.getPublishedUrl();
   var shortUrl = published;
   try { shortUrl = form.shortenFormUrl(published); } catch (err) { Logger.log('Short link unavailable: ' + err); }
@@ -795,10 +867,13 @@ function addMissingForms() {
   if (!ssId) throw new Error('Run setupRCQI first.');
   var folder = DriveApp.getFolderById(props.getProperty('FOLDER_ID'));
   var links = JSON.parse(props.getProperty('FORM_LINKS') || '{}');
+  var ss = SpreadsheetApp.openById(ssId);
+  var directory = facilityDirectory_(ss);
+  if (!directory.length) directory = loadFacilityDirectory(ss);
   var added = [];
   FORM_DEFS.forEach(function (def) {
     if (links[def.key]) return;
-    links[def.key] = createLinkedForm_(def, ssId, folder);
+    links[def.key] = createLinkedForm_(def, ssId, folder, directory);
     added.push(def.short);
   });
   props.setProperty('FORM_LINKS', JSON.stringify(links));
@@ -810,7 +885,7 @@ function addMissingForms() {
   showLinks();
 }
 
-function buildForm_(def) {
+function buildForm_(def, directory) {
   var form = FormApp.create(def.title);
   addLogo_(form);
   form.setDescription(def.description);
@@ -819,15 +894,37 @@ function buildForm_(def) {
   form.setShowLinkToRespondAgain(true);
   var created = {};
   def.items.forEach(function (it) { created[it.key || it.title] = addItem_(form, it); });
-  // Branching: route each answer of a routing question to its section.
-  def.items.forEach(function (it) {
-    if (!it.routes) return;
-    var item = created[it.key];
-    item.setChoices(it.options.map(function (label, i) {
-      return item.createChoice(label, created[it.routes[i]]);
-    }));
-  });
+  applyRoutes_(def, created, directory || []);
   return form;
+}
+
+/**
+ * Branching and DHIS2 lists: routes each answer of a routing question to its section, fills each district's facility
+ * list from the directory (every facility continues, "not listed" goes to the typed name) and ends sections with Submit.
+ * Items read back from a form are generic and need converting; items just created are already typed.
+ */
+function applyRoutes_(def, found, directory) {
+  var asPage = function (item) { return item.asPageBreakItem ? item.asPageBreakItem() : item; };
+  var asChoice = function (item, type) {
+    if (type === 'dropdown') return item.asListItem ? item.asListItem() : item;
+    return item.asMultipleChoiceItem ? item.asMultipleChoiceItem() : item;
+  };
+  var target = function (key) { return key === 'SUBMIT' ? FormApp.PageNavigationType.SUBMIT : asPage(found[key]); };
+  def.items.forEach(function (it) {
+    var k = it.key || it.title;
+    if (!found[k]) return;
+    if (it.type === 'section' && it.goTo === 'SUBMIT') asPage(found[k]).setGoToPage(FormApp.PageNavigationType.SUBMIT);
+    if (it.routes) {
+      var router = asChoice(found[k], it.type);
+      router.setChoices(it.options.map(function (label, i) { return router.createChoice(label, target(it.routes[i])); }));
+    }
+    if (it.facilities) {
+      var list = asChoice(found[k], it.type);
+      list.setChoices(facilityOptions_(directory, it.facilities).map(function (name) {
+        return list.createChoice(name, target(name === NOT_LISTED_ ? it.routeOther : it.routeAll));
+      }));
+    }
+  });
 }
 
 /** Fetches the coat of arms of Uganda (transparent PNG), full size or the small email copy. Returns null if it cannot be fetched. */
@@ -996,6 +1093,7 @@ function writeReadMe_(ss, links) {
     ['HSR follow-up', 'The QI Committee updates the columns Reference No., QI Review Status, QI Action Taken and Date Closed on the HSR Reports tab. New reports receive a reference number automatically.'],
     ['Privacy', 'Free text from the HSR and the assessment forms (descriptions, causes, comments), all names, phone numbers and email addresses stay in this sheet and are never sent to the dashboard. QI Journal narratives (objective, problem, changes and notes) are published on the dashboard QI Journal page; team names and email addresses are not.'],
     ['QI Journal notifications', 'Every QI Journal entry emails the project\'s team list (addresses from the registration and from any "Update the team email list" entries) and each person on the ' + RCQI.notifyTab + ' tab whose Active column is Yes and whose Facility is "All facilities" or the project\'s facility. Every send is recorded on the ' + RCQI.notifyLogTab + ' tab. A personal Gmail account can send to about 100 recipients a day.'],
+    ['DHIS2 facilities', 'Facility forms ask for the district first, then list that district\'s facilities from the ' + RCQI.facilitiesTab + ' tab (pulled from the DHIS2 test instance). On each submission the DHIS2 facility, DHIS2 district, DHIS2 UID and Facility match columns are filled. Names typed on the "not in the list" page are matched automatically; any marked "Please confirm" or "Not found" are corrected by choosing the facility in the DHIS2 facility column. The dashboard always uses that column when it is filled.'],
     ['', ''],
     ['Form', 'Share link']
   ];
@@ -1034,6 +1132,10 @@ function onRcqiFormSubmit(e) {
   if (!e || !e.range) return;
   CacheService.getScriptCache().remove('payload');
   var sheet = e.range.getSheet();
+  var tabDef = FORM_DEFS.filter(function (d) { return d.tab === sheet.getName(); })[0];
+  if (tabDef && tabDef.facilityMapped) {
+    try { writeFacilityMapping_(sheet, e.range.getRow(), tabDef, facilityDirectory_(sheet.getParent())); } catch (err) { Logger.log('Facility mapping failed: ' + err); }
+  }
   if (sheet.getName() === 'QI Journal') {
     try { refreshJournalProjects(); } catch (err) { Logger.log('Project list not refreshed: ' + err); }
     try { notifyJournalEntry_(sheet, e.range.getRow()); } catch (err) { Logger.log('Notification failed: ' + err); }
@@ -1073,10 +1175,12 @@ function refreshJournalProjects() {
   var links = JSON.parse(props.getProperty('FORM_LINKS') || '{}');
   var def = FORM_DEFS.filter(function (d) { return d.key === 'qij'; })[0];
   if (!links.qij || !def) return;
-  var sheet = SpreadsheetApp.openById(props.getProperty('SPREADSHEET_ID')).getSheetByName(def.tab);
-  var parsed = parseValues_(def, sheet ? sheet.getDataRange().getValues() : [[]], RCQI.timezone);
+  var ss = SpreadsheetApp.openById(props.getProperty('SPREADSHEET_ID'));
+  var sheet = ss.getSheetByName(def.tab);
+  var values = sheet ? sheet.getDataRange().getValues() : [[]];
+  var records = applyFacilityMapping_(def, values, parseValues_(def, values, RCQI.timezone).records, facilityDirectory_(ss));
   var labels = [];
-  parsed.records.forEach(function (r) {
+  records.forEach(function (r) {
     if (String(r.entryType || '').indexOf('Register') === 0) {
       var label = projectLabel_(r);
       if (labels.indexOf(label) === -1) labels.push(label);
@@ -1094,11 +1198,293 @@ function refreshJournalProjects() {
 }
 
 /* ------------------------------------------------------------------------ */
+/* DHIS2 facility directory and matching                                     */
+/* ------------------------------------------------------------------------ */
+
+/** Display labels: the facility name, with the district added only where two districts share a name. */
+function facilityLabels_(facilities) {
+  var count = {};
+  facilities.forEach(function (f) { var k = f.name.toLowerCase(); count[k] = (count[k] || 0) + 1; });
+  return facilities.map(function (f) { return count[f.name.toLowerCase()] > 1 ? f.name + ' (' + f.district + ')' : f.name; });
+}
+
+var FACILITY_HEADER_ = ['Label', 'Facility', 'District', 'Sub-county', 'Local government', 'Level', 'Ownership', 'Functional', 'DHIS2 UID'];
+
+/**
+ * Writes the DHIS2 facility list into the DHIS2 Facilities tab from the repository copy. Rows a coordinator added by hand
+ * (no UID, or a UID not in the new list) are kept below. Safe to run more than once.
+ */
+function loadFacilityDirectory(ss) {
+  ss = ss || SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID'));
+  var json = JSON.parse(UrlFetchApp.fetch(RCQI.facilitiesUrl).getContentText());
+  var labels = facilityLabels_(json.facilities);
+  var rows = json.facilities.map(function (f, i) {
+    return [labels[i], f.name, f.district, f.subcounty, f.dlg, f.level || '', f.ownership || '', f.functional ? 'Yes' : 'No', f.uid];
+  });
+  var sh = ss.getSheetByName(RCQI.facilitiesTab);
+  var kept = [];
+  if (sh) {
+    var known = {};
+    json.facilities.forEach(function (f) { known[f.uid] = true; });
+    sh.getDataRange().getValues().slice(1).forEach(function (r) {
+      if (String(r[1]).trim() && !known[String(r[8]).trim()]) kept.push(r.slice(0, FACILITY_HEADER_.length));
+    });
+    sh.clearContents();
+  } else {
+    sh = ss.insertSheet(RCQI.facilitiesTab);
+  }
+  var all = [FACILITY_HEADER_].concat(rows, kept);
+  sh.getRange(1, 1, all.length, FACILITY_HEADER_.length).setValues(all);
+  styleHeader_(sh);
+  sh.setColumnWidth(1, 320); sh.setColumnWidth(2, 300);
+  Logger.log('DHIS2 Facilities: ' + rows.length + ' facilities from DHIS2 (' + json.pulled + ')' + (kept.length ? ' and ' + kept.length + ' added by hand' : '') + '.');
+  return facilityDirectory_(ss);
+}
+
+/** The facility directory from the DHIS2 Facilities tab: [{label, name, district, subcounty, dlg, level, ownership, functional, uid}]. */
+function facilityDirectory_(ss) {
+  var sh = ss.getSheetByName(RCQI.facilitiesTab);
+  if (!sh) return [];
+  return directoryFromRows_(sh.getDataRange().getValues());
+}
+
+function directoryFromRows_(values) {
+  return (values || []).slice(1).filter(function (r) { return String(r[1]).trim(); }).map(function (r) {
+    return { label: String(r[0]).trim() || String(r[1]).trim(), name: String(r[1]).trim(), district: String(r[2]).trim(), subcounty: String(r[3]).trim(),
+      dlg: String(r[4]).trim(), level: String(r[5]).trim() || null, ownership: String(r[6]).trim() || null, functional: String(r[7]).trim() !== 'No', uid: String(r[8]).trim() };
+  });
+}
+
+/** Builds directory rows (as the tab holds them) from the repository JSON; used by tests and fresh set-ups. */
+function directoryFromJson_(json) {
+  var labels = facilityLabels_(json.facilities);
+  return directoryFromRows_([FACILITY_HEADER_].concat(json.facilities.map(function (f, i) {
+    return [labels[i], f.name, f.district, f.subcounty, f.dlg, f.level || '', f.ownership || '', f.functional ? 'Yes' : 'No', f.uid];
+  })));
+}
+
+/** Facility names offered for one district, in alphabetical order, followed by the not-listed answer. */
+function facilityOptions_(directory, district) {
+  var names = directory.filter(function (f) { return f.district === district; }).map(function (f) { return f.name; });
+  names.sort(function (a, b) { return a.toLowerCase() < b.toLowerCase() ? -1 : (a.toLowerCase() > b.toLowerCase() ? 1 : 0); });
+  return names.concat([NOT_LISTED_]);
+}
+
+var FAC_GENERIC_ = { hc: 1, ii: 1, iii: 1, iv: 1, hospital: 1, general: 1, medical: 1, centre: 1, clinic: 1, health: 1, regional: 1,
+  referral: 1, government: 1, ngo: 1, saint: 1, community: 1, care: 1, unit: 1, services: 1, domiciliary: 1, maternity: 1 };
+var FAC_WORDS_ = { hosp: 'hospital', hospitals: 'hospital', gen: 'general', med: 'medical', center: 'centre', ctr: 'centre', cntr: 'centre',
+  clinc: 'clinic', cinic: 'clinic', clinics: 'clinic', govt: 'government', gvt: 'government', gov: 'government', st: 'saint', prison: 'prisons',
+  domicilliary: 'domiciliary', domicilary: 'domiciliary' };
+var FAC_STOP_ = { the: 1, of: 1, and: 1 };
+
+/** Lower-case word tokens with health-facility abbreviations expanded: "Nankoma H/C 4" becomes nankoma hc iv. */
+function facilityTokens_(s) {
+  var raw = String(s || '').toLowerCase().replace(/&/g, ' and ').replace(/h\/c/g, ' hc ').replace(/[^a-z0-9]+/g, ' ').trim().split(' ');
+  var out = [];
+  for (var i = 0; i < raw.length; i++) {
+    var t = raw[i];
+    if (!t || FAC_STOP_[t]) continue;
+    if (t === 'jrrh') { out.push('jinja', 'regional', 'referral', 'hospital'); continue; }
+    if (t === 'rrh') { out.push('regional', 'referral', 'hospital'); continue; }
+    if (t === 'h' && raw[i + 1] === 'c') { out.push('hc'); i += 1; continue; }
+    if (t === 'health' && /^cent(re|er)$/.test(raw[i + 1] || '')) { out.push('hc'); i += 1; continue; }
+    var m = t.match(/^hc(ii|iii|iv|[234])$/);
+    if (m) { out.push('hc', ({ '2': 'ii', '3': 'iii', '4': 'iv' })[m[1]] || m[1]); continue; }
+    if (/^[234]$/.test(t) && out[out.length - 1] === 'hc') { out.push(({ '2': 'ii', '3': 'iii', '4': 'iv' })[t]); continue; }
+    out.push(FAC_WORDS_[t] || t);
+  }
+  return out;
+}
+
+/** HC II, HC III, HC IV, Hospital or RRH when the name states it. */
+function facilityLevelOf_(tokens) {
+  var s = ' ' + tokens.join(' ') + ' ';
+  if (/ regional referral hospital /.test(s)) return 'RRH';
+  var m = s.match(/ hc (ii|iii|iv) /);
+  if (m) return 'HC ' + m[1].toUpperCase();
+  if (/ hospital /.test(s)) return 'Hospital';
+  return null;
+}
+
+function levelOfDirectory_(level) {
+  if (!level) return null;
+  if (level === 'General Hospital') return 'Hospital';
+  return /^(HC II|HC III|HC IV|RRH)$/.test(level) ? level : null;
+}
+
+function editDistance_(a, b) {
+  if (Math.abs(a.length - b.length) > 2) return 3;
+  var prev = [], cur, i, j;
+  for (j = 0; j <= b.length; j++) prev[j] = j;
+  for (i = 1; i <= a.length; i++) {
+    cur = [i];
+    for (j = 1; j <= b.length; j++) cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1, prev[j - 1] + (a.charAt(i - 1) === b.charAt(j - 1) ? 0 : 1));
+    prev = cur;
+  }
+  return prev[b.length];
+}
+
+/** How alike two words are: identical 1, a small slip in a longer word 0.85 or 0.7, otherwise 0. */
+function wordSim_(a, b) {
+  if (a === b) return 1;
+  var n = Math.min(a.length, b.length);
+  if (n < 4) return 0;
+  var d = editDistance_(a, b);
+  if (d === 1) return 0.85;
+  if (d === 2 && n >= 7) return 0.7;
+  return 0;
+}
+
+function bagSim_(x, y) {
+  if (!x.length && !y.length) return 1;
+  if (!x.length || !y.length) return 0;
+  var best = function (from, to) {
+    var sum = 0;
+    from.forEach(function (w) { var b = 0; to.forEach(function (v) { b = Math.max(b, wordSim_(w, v)); }); sum += b; });
+    return sum;
+  };
+  return (best(x, y) + best(y, x)) / (x.length + y.length);
+}
+
+/** Similarity of a typed name to a directory facility, 0 to 1. Distinctive words count most; a different stated level is penalised. */
+function facilityScore_(typed, fac) {
+  var a = facilityTokens_(typed), b = facilityTokens_(fac.name);
+  if (a.join(' ') === b.join(' ')) return 1;
+  var core = function (t) { return t.filter(function (w) { return !FAC_GENERIC_[w]; }); };
+  var gen = function (t) { return t.filter(function (w) { return FAC_GENERIC_[w]; }); };
+  var score = 0.85 * bagSim_(core(a), core(b)) + 0.15 * bagSim_(gen(a), gen(b));
+  var la = facilityLevelOf_(a), lb = levelOfDirectory_(fac.level) || facilityLevelOf_(b);
+  var hospitals = { Hospital: 1, RRH: 1 };
+  if (la && lb && la !== lb && !(hospitals[la] && hospitals[lb])) score *= 0.6;
+  return Math.round(score * 1000) / 1000;
+}
+
+/**
+ * Matches one entry to the directory. input: {district, picked, typed}.
+ * Returns {status, fac, score, entered, note}: selected (picked from the list), matched (typed name, confident),
+ * review (a likely facility that needs a person to confirm), unmatched, or none (no facility answered).
+ */
+function matchFacility_(input, directory) {
+  var district = String(input.district || '').trim();
+  var picked = String(input.picked || '').trim();
+  var typed = String(input.typed || '').trim();
+  if (picked && picked !== NOT_LISTED_) {
+    var exact = directory.filter(function (f) { return f.district === district && f.name === picked; })[0] ||
+      directory.filter(function (f) { return f.name === picked || f.label === picked; })[0];
+    if (exact) return { status: 'selected', fac: exact, score: 1, entered: picked };
+    if (!typed) typed = picked;
+  }
+  if (!typed) return { status: 'none', fac: null, score: 0, entered: '' };
+  var inDistrict = BUSOGA_.indexOf(district) > -1;
+  var rank = function (list) {
+    return list.map(function (f) { return { f: f, s: facilityScore_(typed, f) }; }).sort(function (x, y) { return y.s - x.s; });
+  };
+  var local = inDistrict ? rank(directory.filter(function (f) { return f.district === district; })) : [];
+  var all = rank(directory);
+  var top = local[0], second = local[1];
+  var unique = function (x, y) { return x.s === 1 ? (!y || y.s < 1) : (!y || x.s - y.s >= 0.06); };
+  if (top && top.s >= 0.85 && unique(top, second)) {
+    return { status: 'matched', fac: top.f, score: top.s, entered: typed };
+  }
+  var best = all[0];
+  if (top && top.s >= 0.6) {
+    return { status: 'review', fac: top.f, score: top.s, entered: typed, note: top.s >= 0.85 && !unique(top, second) ? 'Two facilities are equally close.' : '' };
+  }
+  if (best && best.s >= 0.85) {
+    var other = inDistrict && best.f.district !== district;
+    if (!inDistrict && unique(best, all[1])) return { status: 'matched', fac: best.f, score: best.s, entered: typed };
+    return { status: 'review', fac: best.f, score: best.s, entered: typed, note: other ? 'Registered in ' + districtLabel_(best.f.district) + ', not ' + districtLabel_(district) + '.' : '' };
+  }
+  if (best && best.s >= 0.6) return { status: 'review', fac: best.f, score: best.s, entered: typed, note: '' };
+  return { status: 'unmatched', fac: null, score: best ? best.s : 0, entered: typed };
+}
+
+/** The four mapping cells written to a facility tab: DHIS2 facility, DHIS2 district, DHIS2 UID, Facility match. */
+function facilityMappingCells_(m) {
+  if (!m || m.status === 'none') return null;
+  var pct = Math.round(m.score * 100) + '%';
+  if (m.status === 'selected' || m.status === 'matched' || m.status === 'confirmed') {
+    var how = m.status === 'selected' ? 'Selected from the DHIS2 list' : (m.status === 'confirmed' ? 'Confirmed by a coordinator' : 'Matched from the typed name "' + m.entered + '" (' + pct + ')');
+    return [m.fac.label, m.fac.district, m.fac.uid, how];
+  }
+  if (m.status === 'review') {
+    return ['', '', '', 'Please confirm: "' + m.entered + '" is closest to ' + m.fac.label + ' (' + districtLabel_(m.fac.district) + ', ' + pct + '). ' +
+      (m.note ? m.note + ' ' : '') + 'Choose the right facility in the DHIS2 facility column.'];
+  }
+  return ['', '', '', 'Not found in the DHIS2 list: "' + m.entered + '". Choose the right facility in the DHIS2 facility column, or add it to the ' + RCQI.facilitiesTab + ' tab.'];
+}
+
+/**
+ * Replaces each record's facility answers with the DHIS2 facility (name, district, sub-county, level, UID) and a match status.
+ * A label chosen by a coordinator in the tab's DHIS2 facility column always wins. Pure: values is the response tab.
+ */
+function applyFacilityMapping_(def, values, records, directory) {
+  if (!def.facilityMapped) return records;
+  var head = values && values.length ? values[0].map(function (h) { return String(h).trim(); }) : [];
+  var col = head.indexOf('DHIS2 facility');
+  var byLabel = {};
+  directory.forEach(function (f) { byLabel[f.label.toLowerCase()] = f; });
+  records.forEach(function (rec) {
+    var rowIdx = Number(String(rec.id).split('-').pop()) - 1;
+    var override = col > -1 && values[rowIdx] ? String(values[rowIdx][col] || '').trim() : '';
+    var m = matchFacility_({ district: rec.district, picked: rec.facilityPick, typed: rec.facilityTyped || rec.facilityLegacy }, directory);
+    if (override && byLabel[override.toLowerCase()]) m = { status: 'confirmed', fac: byLabel[override.toLowerCase()], score: 1, entered: m.entered || override };
+    delete rec.facilityPick; delete rec.facilityTyped; delete rec.facilityLegacy;
+    if (m.status === 'none') return;
+    rec.facilityEntered = m.entered;
+    rec.facilityMatch = m.status;
+    if (m.status === 'selected' || m.status === 'matched' || m.status === 'confirmed') {
+      rec.facility = m.fac.name;
+      rec.district = m.fac.district;
+      rec.subcounty = m.fac.subcounty;
+      rec.facilityUid = m.fac.uid;
+      rec.facilityLevel = m.fac.level;
+      rec.facilityOwnership = m.fac.ownership;
+    } else {
+      rec.facility = m.entered;
+      if (m.fac) rec.facilitySuggestion = m.fac.name;
+    }
+  });
+  return records;
+}
+
+/** Called by the submit trigger: writes the mapping cells for one new row, unless a coordinator has already set them. */
+function writeFacilityMapping_(sheet, rowNumber, def, directory) {
+  var values = sheet.getDataRange().getValues();
+  var head = values[0].map(function (h) { return String(h).trim(); });
+  var cols = FACILITY_EXTRAS_.map(function (ex) { return head.indexOf(ex.header); });
+  if (cols[0] < 0 || !values[rowNumber - 1] || String(values[rowNumber - 1][cols[0]]).trim()) return null;
+  var rec = parseValues_(def, values, RCQI.timezone).records.filter(function (r) { return r.id === def.key + '-' + rowNumber; })[0];
+  if (!rec) return null;
+  var m = matchFacility_({ district: rec.district, picked: rec.facilityPick, typed: rec.facilityTyped || rec.facilityLegacy }, directory);
+  var cells = facilityMappingCells_(m);
+  if (!cells) return null;
+  cols.forEach(function (c, i) { if (c > -1) sheet.getRange(rowNumber, c + 1).setValue(cells[i]); });
+  return m;
+}
+
+/** Adds the mapping columns (with a DHIS2 facility drop-down) to a facility tab that lacks them. */
+function ensureFacilityColumns_(sheet, ss) {
+  var head = sheet.getRange(1, 1, 1, Math.max(sheet.getLastColumn(), 1)).getValues()[0].map(function (h) { return String(h).trim(); });
+  var missing = FACILITY_EXTRAS_.filter(function (ex) { return head.indexOf(ex.header) < 0; });
+  if (missing.length) addExtraColumns_(sheet, missing);
+  head = sheet.getRange(1, 1, 1, sheet.getLastColumn()).getValues()[0].map(function (h) { return String(h).trim(); });
+  var facCol = head.indexOf('DHIS2 facility') + 1;
+  var dir = ss.getSheetByName(RCQI.facilitiesTab);
+  if (facCol > 0 && dir) {
+    var rule = SpreadsheetApp.newDataValidation().requireValueInRange(dir.getRange('A2:A'), true).setAllowInvalid(false)
+      .setHelpText('Choose the facility from the DHIS2 Facilities tab.').build();
+    sheet.getRange(2, facCol, sheet.getMaxRows() - 1, 1).setDataValidation(rule);
+  }
+  return missing.length;
+}
+
+/* ------------------------------------------------------------------------ */
 /* Upgrading live forms in place                                             */
 /* ------------------------------------------------------------------------ */
 
-/** Forms that upgradeForms() may change. Other forms are left exactly as they are. */
-var FORM_UPGRADE_KEYS = ['qij'];
+/** Forms that upgradeForms() may change. Other forms (the HSR) are left exactly as they are. */
+var FORM_UPGRADE_KEYS = ['fives', 'hh', 'ipcBasic', 'ipcMoh', 'hfqap', 'qij'];
 
 var ITEM_TYPE_FOR_ = {
   section: 'PAGE_BREAK', mc: 'MULTIPLE_CHOICE', checkbox: 'CHECKBOX', dropdown: 'LIST', text: 'TEXT',
@@ -1111,7 +1497,21 @@ var ITEM_TYPE_FOR_ = {
  * and reapplies the branching. Existing questions are matched by title and type and never removed or renamed.
  * Returns the titles added. With dryRun nothing is changed.
  */
-function syncFormItems_(form, def, dryRun) {
+function syncFormItems_(form, def, dryRun, directory) {
+  var removed = [], kept = [];
+  var questionCount = form.getItems().filter(function (item) { return item.getType() != FormApp.ItemType.IMAGE; }).length;
+  // Retired questions are removed only while the form has no responses; otherwise they stay, so nothing is lost.
+  if ((def.retired || []).length) {
+    var noResponses = form.getResponses().length === 0;
+    def.retired.forEach(function (r) {
+      form.getItems().forEach(function (item) {
+        if (item.getTitle() !== r.title || item.getType() != FormApp.ItemType[ITEM_TYPE_FOR_[r.type]]) return;
+        if (!noResponses) { kept.push(r.title); return; }
+        removed.push(r.title);
+        if (!dryRun) form.deleteItem(item);
+      });
+    });
+  }
   var items = form.getItems();
   var match = function (it) {
     var type = FormApp.ItemType[ITEM_TYPE_FOR_[it.type]];
@@ -1122,6 +1522,7 @@ function syncFormItems_(form, def, dryRun) {
   };
   var found = {};
   var added = [];
+  var matched = 0;
   var cursor = 0;
   items.forEach(function (item) {
     if (item.getType() == FormApp.ItemType.IMAGE && item.getIndex() === 0) cursor = 1; // keep the coat of arms first
@@ -1129,6 +1530,7 @@ function syncFormItems_(form, def, dryRun) {
   def.items.forEach(function (it) {
     var existing = match(it);
     if (existing) {
+      matched += 1;
       found[it.key || it.title] = existing;
       cursor = Math.max(cursor, existing.getIndex() + 1);
       if (!dryRun && it.help && existing.getHelpText() !== it.help) existing.setHelpText(it.help);
@@ -1141,22 +1543,11 @@ function syncFormItems_(form, def, dryRun) {
     found[it.key || it.title] = item;
     cursor += 1;
   });
-  if (dryRun) return added;
+  var result = { added: added, removed: removed, kept: kept, matched: matched, existing: questionCount };
+  if (dryRun) return result;
   if (def.description && form.getDescription() !== def.description) form.setDescription(def.description);
-  // Items read from the form are generic and need converting; items just created are already typed.
-  var asPage = function (item) { return item.asPageBreakItem ? item.asPageBreakItem() : item; };
-  var asChoice = function (item) { return item.asMultipleChoiceItem ? item.asMultipleChoiceItem() : item; };
-  def.items.forEach(function (it) {
-    if (it.type === 'section' && it.goTo === 'SUBMIT' && found[it.key]) {
-      asPage(found[it.key]).setGoToPage(FormApp.PageNavigationType.SUBMIT);
-    }
-    if (!it.routes || !found[it.key]) return;
-    var router = asChoice(found[it.key]);
-    router.setChoices(it.options.map(function (label, i) {
-      return router.createChoice(label, asPage(found[it.routes[i]]));
-    }));
-  });
-  return added;
+  applyRoutes_(def, found, directory || []);
+  return result;
 }
 
 /**
@@ -1168,18 +1559,27 @@ function upgradeForms() {
   var props = PropertiesService.getScriptProperties();
   var links = JSON.parse(props.getProperty('FORM_LINKS') || '{}');
   var ss = SpreadsheetApp.openById(props.getProperty('SPREADSHEET_ID'));
-  FORM_DEFS.forEach(function (def) {
-    if (!links[def.key] || FORM_UPGRADE_KEYS.indexOf(def.key) === -1) return;
+  var directory = loadFacilityDirectory(ss);
+  // Check every form first, so a problem with one changes none of them.
+  var plans = FORM_DEFS.filter(function (def) { return links[def.key] && FORM_UPGRADE_KEYS.indexOf(def.key) > -1; }).map(function (def) {
     var form = FormApp.openById(links[def.key].id);
-    var planned = syncFormItems_(form, def, true);
-    // Safety: if most questions are not recognised, something is wrong with the matching; change nothing.
-    if (planned.length > def.items.length / 2) {
-      throw new Error(def.short + ': ' + planned.length + ' of ' + def.items.length + ' questions were not found, so nothing was changed. Planned: ' + planned.join(' | '));
+    var plan = syncFormItems_(form, def, true, directory);
+    // Safety: if most of the form's questions are not recognised, the matching is wrong; change nothing.
+    if (plan.matched < plan.existing / 2) {
+      throw new Error(def.short + ': only ' + plan.matched + ' of ' + plan.existing + ' questions were recognised, so nothing was changed.');
     }
-    var added = syncFormItems_(form, def, false);
-    Logger.log(def.short + ': ' + (added.length ? 'added ' + added.join(' | ') : 'already up to date'));
-    var tab = ss.getSheetByName(def.tab);
-    if (tab) { SpreadsheetApp.flush(); styleHeader_(tab); }
+    return { def: def, form: form };
+  });
+  plans.forEach(function (p) {
+    var res = syncFormItems_(p.form, p.def, false, directory);
+    Logger.log(p.def.short + ': ' + (res.added.length ? 'added ' + res.added.length + ' (' + res.added.slice(0, 3).join(' | ') + (res.added.length > 3 ? ' ...' : '') + ')' : 'nothing to add') +
+      (res.removed.length ? '; removed ' + res.removed.join(' | ') : '') + (res.kept.length ? '; kept (has responses) ' + res.kept.join(' | ') : '') + '; lists refreshed');
+    var tab = ss.getSheetByName(p.def.tab);
+    if (tab) {
+      SpreadsheetApp.flush();
+      styleHeader_(tab);
+      if (p.def.facilityMapped) ensureFacilityColumns_(tab, ss);
+    }
   });
   replaceFormLogos();
   setupNotifications();
@@ -1282,7 +1682,7 @@ function fmtDate_(iso) {
  */
 function journalNotification_(def, values, rowNumber, coordRows, opts) {
   opts = opts || {};
-  var records = parseValues_(def, values, opts.tz || RCQI.timezone, { includePrivate: true }).records;
+  var records = applyFacilityMapping_(def, values, parseValues_(def, values, opts.tz || RCQI.timezone, { includePrivate: true }).records, opts.directory || []);
   var idx = -1;
   records.forEach(function (r, i) { if (r.id === def.key + '-' + rowNumber) idx = i; });
   if (idx < 0) return null;
@@ -1482,7 +1882,7 @@ function notifyJournalEntry_(sheet, rowNumber) {
   var logo = fetchLogo_(RCQI.emailLogoUrl);
   var msg = journalNotification_(defByKey_('qij'), sheet.getDataRange().getValues(), rowNumber,
     list ? list.getDataRange().getValues() : [[]],
-    { tz: RCQI.timezone, formUrl: links.qij ? links.qij.shortUrl : '', hasLogo: !!logo });
+    { tz: RCQI.timezone, formUrl: links.qij ? links.qij.shortUrl : '', hasLogo: !!logo, directory: facilityDirectory_(ss) });
   if (!msg) return;
   var result = sendJournalNotification_(msg, mailApp_(), logo);
   logNotification_(ss, msg, result);
@@ -1500,16 +1900,17 @@ function sendTestNotification() {
   var header = ['Timestamp'].concat(titles);
   var row = function (o) { return header.map(function (h) { return o[h] !== undefined ? o[h] : ''; }); };
   var values = [header,
-    row({ 'Timestamp': '2026-01-05T08:00:00.000Z', 'What would you like to record?': 'Register a new QI project', 'Name of the facility': 'Demo Facility A HC IV',
+    row({ 'Timestamp': '2026-01-05T08:00:00.000Z', 'What would you like to record?': 'Register a new QI project', 'District': 'Kamuli', 'Health facility in Kamuli District': 'Namwendwa Health Centre IV',
       'Short project title': 'Early first antenatal visit', 'Target for the indicator (%)': 45, 'Indicator for the objective': 'First antenatal visits within the first trimester (%)' }),
-    row({ 'Timestamp': '2026-09-02T08:00:00.000Z', 'What would you like to record?': 'Record monthly results', 'Which QI project are these results for?': 'Demo Facility A HC IV: Early first antenatal visit',
+    row({ 'Timestamp': '2026-09-02T08:00:00.000Z', 'What would you like to record?': 'Record monthly results', 'Which QI project are these results for?': 'Namwendwa Health Centre IV: Early first antenatal visit',
       'Month of measurement': '2026-08-15', 'Numerator for the month': 22, 'Denominator for the month': 53 }),
-    row({ 'Timestamp': '2026-10-02T08:00:00.000Z', 'What would you like to record?': 'Record monthly results', 'Which QI project are these results for?': 'Demo Facility A HC IV: Early first antenatal visit',
+    row({ 'Timestamp': '2026-10-02T08:00:00.000Z', 'What would you like to record?': 'Record monthly results', 'Which QI project are these results for?': 'Namwendwa Health Centre IV: Early first antenatal visit',
       'Month of measurement': '2026-09-15', 'Numerator for the month': 19, 'Denominator for the month': 43,
       'Notes on the indicator': 'Latest month: gains sustained.', 'Other observed effects and lessons learnt': 'Staff report better teamwork.' })];
   var logo = fetchLogo_(RCQI.emailLogoUrl);
   var links = JSON.parse(PropertiesService.getScriptProperties().getProperty('FORM_LINKS') || '{}');
-  var msg = journalNotification_(def, values, 4, [['Email'], [owner]], { tz: RCQI.timezone, formUrl: links.qij ? links.qij.shortUrl : '', hasLogo: !!logo });
+  var ss0 = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID'));
+  var msg = journalNotification_(def, values, 4, [['Email'], [owner]], { tz: RCQI.timezone, formUrl: links.qij ? links.qij.shortUrl : '', hasLogo: !!logo, directory: facilityDirectory_(ss0) });
   msg.subject = 'Test: ' + msg.subject;
   msg.recipients = [owner];
   var result = sendJournalNotification_(msg, mailApp_(), logo);
@@ -1567,16 +1968,18 @@ function buildPayload_(wantDiag) {
   var links = JSON.parse(props.getProperty('FORM_LINKS') || '{}');
   var out = { ok: true, schema: RCQI.schema, generatedAt: new Date().toISOString(), forms: {}, data: {} };
   if (wantDiag) out.diagnostics = {};
+  var directory = facilityDirectory_(ss);
   FORM_DEFS.forEach(function (def) {
     var link = links[def.key] || {};
     out.forms[def.key] = { title: def.title, short: def.short, url: link.url || '', shortUrl: link.shortUrl || '' };
     var sheet = ss.getSheetByName(def.tab);
     var values = sheet ? sheet.getDataRange().getValues() : [[]];
     var parsed = parseValues_(def, values, RCQI.timezone);
-    out.data[def.key] = parsed.records;
+    out.data[def.key] = applyFacilityMapping_(def, values, parsed.records, directory);
     out.forms[def.key].responses = parsed.records.length;
     if (wantDiag) out.diagnostics[def.key] = parsed.diag;
   });
+  if (wantDiag) out.diagnostics.facilityDirectory = directory.length;
   return out;
 }
 
@@ -1610,6 +2013,10 @@ function buildHeaderMap_(def) {
   });
   (def.extras || []).forEach(function (ex) {
     map[ex.header] = { key: ex.key, kind: ex.kind || 'text', exportField: ex.exportField !== false };
+  });
+  // Retired questions: older rows still map, but a form without them is not missing anything.
+  (def.retired || []).forEach(function (r) {
+    if (r.as) map[r.title] = { key: r.as, kind: 'text', exportField: true, optional: true };
   });
   return map;
 }
@@ -1661,7 +2068,7 @@ function convert_(kind, v, tz) {
 function parseValues_(def, values, tz, opts) {
   var includePrivate = !!(opts && opts.includePrivate);
   var map = buildHeaderMap_(def);
-  var expected = Object.keys(map);
+  var expected = Object.keys(map).filter(function (h) { return !map[h].optional; });
   var headers = (values && values.length) ? values[0].map(function (h) { return String(h).trim(); }) : [];
   var cols = [];
   var matched = {};

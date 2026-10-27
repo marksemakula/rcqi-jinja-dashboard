@@ -8,8 +8,18 @@ export interface BaseRec {
   date?: string | null;
   district?: string | null;
   facility?: string | null;
+  /** DHIS2 mapping added by the data service: selected or matched entries carry the facility's DHIS2 details. */
+  facilityUid?: string | null;
+  subcounty?: string | null;
+  facilityLevel?: string | null;
+  facilityOwnership?: string | null;
+  facilityMatch?: FacilityMatch | null;
+  facilityEntered?: string | null;
+  facilitySuggestion?: string | null;
   items: Record<string, string>;
 }
+
+export type FacilityMatch = 'selected' | 'matched' | 'confirmed' | 'review' | 'unmatched';
 
 export interface HsrRec extends BaseRec {
   cadre?: string | null;

@@ -1,6 +1,7 @@
 /**
  * Demonstration data. Clearly labelled in the interface and never mixed with live data.
- * Facilities other than JRRH use fictitious names ("Demo Facility A") so that no real facility is misrepresented.
+ * At Mark's request the facilities are real Busoga facilities from the DHIS2 list; every figure is invented, and the
+ * banner says so, so that no facility is misrepresented.
  */
 import {
   BASIC_IPC_DOMAINS, FIVE_S_DOMAINS, HFQAP_M5_PARTS, HFQAP_MODULES, HFQAP_STANDARDS, HH_MOMENTS, HOSPITAL,
@@ -26,13 +27,13 @@ const DEPARTMENTS = ['Medical unit', 'Surgical unit', 'OBGY', 'Paediatrics', 'Ca
 
 export const DEMO_FACILITIES = [
   { facility: HOSPITAL, district: 'Jinja City', level: 'Regional Referral Hospital', ownership: 'Government (Public)', p: 0.8 },
-  { facility: 'Demo Facility A HC IV', district: 'Kamuli', level: 'HC IV', ownership: 'Government (Public)', p: 0.66 },
-  { facility: 'Demo Facility B Hospital', district: 'Iganga', level: 'General Hospital', ownership: 'Government (Public)', p: 0.72 },
-  { facility: 'Demo Facility C HC III', district: 'Mayuge', level: 'HC III', ownership: 'Government (Public)', p: 0.55 },
-  { facility: 'Demo Facility D HC III', district: 'Bugiri', level: 'HC III', ownership: 'Private Not for Profit (PNFP or Faith based)', p: 0.62 },
-  { facility: 'Demo Facility E HC IV', district: 'Luuka', level: 'HC IV', ownership: 'Government (Public)', p: 0.58 },
-  { facility: 'Demo Facility F HC II', district: 'Namutumba', level: 'HC II', ownership: 'Government (Public)', p: 0.47 },
-  { facility: 'Demo Facility G HC III', district: 'Kaliro', level: 'HC III', ownership: 'Government (Public)', p: 0.6 }
+  { facility: 'Namwendwa Health Centre IV', district: 'Kamuli', level: 'HC IV', ownership: 'Government (Public)', p: 0.66 },
+  { facility: 'Iganga General Hospital', district: 'Iganga', level: 'General Hospital', ownership: 'Government (Public)', p: 0.72 },
+  { facility: 'Bukatube Health Centre III', district: 'Mayuge', level: 'HC III', ownership: 'Government (Public)', p: 0.55 },
+  { facility: 'Iwemba Health Centre III', district: 'Bugiri', level: 'HC III', ownership: 'Government (Public)', p: 0.62 },
+  { facility: 'Kiyunga Health Centre IV', district: 'Luuka', level: 'HC IV', ownership: 'Government (Public)', p: 0.58 },
+  { facility: 'Kaiti Health Centre II', district: 'Namutumba', level: 'HC II', ownership: 'Government (Public)', p: 0.47 },
+  { facility: 'St. Francis Budini Health Centre III', district: 'Kaliro', level: 'HC III', ownership: 'Private Not for Profit (PNFP or Faith based)', p: 0.6 }
 ];
 
 const iso = (d: Date) => d.toISOString().slice(0, 10);
@@ -221,7 +222,7 @@ export function buildDemo(today = new Date()): Dataset {
       ]
     },
     {
-      facility: 'Demo Facility A HC IV', district: 'Kamuli', department: null, title: 'Early first antenatal visit', teamSize: 4, startBack: 10, endAhead: -1, target: 45,
+      facility: 'Namwendwa Health Centre IV', district: 'Kamuli', department: null, title: 'Early first antenatal visit', teamSize: 4, startBack: 10, endAhead: -1, target: 45,
       objective: 'Increase the share of first antenatal visits made in the first trimester from 20% to 45%.',
       indicator: 'First antenatal visits within the first trimester (%)', numeratorDef: 'ANC first visits before 12 weeks of gestation', denominatorDef: 'All ANC first visits in the month',
       problem: 'Most mothers start antenatal care late, after the first trimester, missing early screening and counselling recommended by the MoH guidelines. Village health teams do not routinely identify newly pregnant women.',
@@ -262,6 +263,15 @@ export function buildDemo(today = new Date()): Dataset {
         month: iso(d), numerator: Math.round(denominator * pct), denominator, indicatorNotes: notes, effects });
     }
   });
+
+  // DHIS2 matching as the data service reports it: nearly all picked from the lists, a few typed names matched, and two
+  // that a coordinator still needs to review, so the Forms page shows how review works.
+  const mapped = [...fives, ...hh, ...ipcBasic, ...ipcMoh, ...hfqap, ...qij.filter((r) => r.facility)];
+  mapped.forEach((r) => { r.facilityMatch = 'selected'; r.facilityEntered = r.facility; });
+  const typed: [typeof mapped[number] | undefined, string][] = [[ipcBasic[2], 'Iganga Hosp'], [hfqap[1], 'kiyunga hc 4']];
+  typed.forEach(([r, entered]) => { if (r) { r.facilityMatch = 'matched'; r.facilityEntered = entered; } });
+  if (hh[5]) Object.assign(hh[5], { facility: 'Bulidha HC', district: 'Bugiri', facilityMatch: 'review', facilityEntered: 'Bulidha HC', facilitySuggestion: 'Bulidha Health Centre III' });
+  if (fives[3]) Object.assign(fives[3], { facility: 'Kyabirwa Surgical Centre', district: 'Jinja City', facilityMatch: 'unmatched', facilityEntered: 'Kyabirwa Surgical Centre' });
 
   return { hsr, fives, hh, ipcBasic, ipcMoh, hfqap, qij };
 }
