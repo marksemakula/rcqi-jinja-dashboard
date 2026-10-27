@@ -117,7 +117,7 @@ export default function Journal({ all, filters, forms, focus }: TabProps) {
           {formUrl && <a className="btn" href={formUrl} target="_blank" rel="noopener noreferrer">Add a journal entry</a>}
           {sel && <button type="button" className="btn ghost" onClick={() => window.print()}>Print this journal</button>}
         </div>
-        <p className="muted journal-note">Everyone on a project&apos;s team email list, and the RCQI coordinators, receive an email after every entry for that project. Teams add or remove addresses with the &ldquo;Update the team email list&rdquo; option in the form; addresses are never shown here.</p>
+        <p className="muted journal-note">Everyone on a project&apos;s team email list, and the CQI coordinators, receive an email after every entry for that project. Teams add or remove addresses with the &ldquo;Update the team email list&rdquo; option in the form; addresses are never shown here.</p>
         <div className="kpis">
           <Kpi label="QI projects" value={String(kpi.n)} sub={`${kpi.active} active`} />
           <Kpi label="Changes tested" value={String(kpi.changes)} sub={`${kpi.improved} registered an improvement`} />
@@ -199,7 +199,7 @@ export default function Journal({ all, filters, forms, focus }: TabProps) {
               {sel.months.some((m) => m.effects) ? <ul>{sel.months.filter((m) => m.effects).map((m) => <li key={m.key}><b>{shortMonth(m.key)}:</b> {m.effects}</li>)}</ul> : <p className="muted">No observations recorded yet.</p>}
             </div>
           </div>
-          <p className="journal-foot">Generated from the RCQI QI Documentation Journal form. Printed journals follow the layout of the MoH Documentation Journal for QI activities.</p>
+          <p className="journal-foot">Generated from the CQI QI Documentation Journal form. Printed journals follow the layout of the MoH Documentation Journal for QI activities.</p>
         </article>
       )}
     </div>

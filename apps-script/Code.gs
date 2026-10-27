@@ -1,10 +1,10 @@
 /**
- * RCQI Jinja RRH: Google Forms, master Google Sheet and dashboard data service.
+ * CQI Jinja RRH: Google Forms, master Google Sheet and dashboard data service.
  *
- * Regional Continuous Quality Improvement (RCQI), Jinja Regional Referral Hospital.
+ * Continuous Quality Improvement (CQI), Jinja Regional Referral Hospital.
  *
  * How to use
- *   1. Run setupRCQI() once. It creates a Drive folder, the master spreadsheet,
+ *   1. Run setupCQI() once. It creates a Drive folder, the master spreadsheet,
  *      seven Google Forms linked to their own tabs, the HSR reference trigger and
  *      an API token, loads the DHIS2 facility list and the notification tabs. On an existing installation,
  *      run addMissingForms() to add a new form or upgradeForms() to add new
@@ -20,8 +20,8 @@
  */
 
 var RCQI = {
-  folderName: 'RCQI Jinja RRH',
-  sheetName: 'RCQI Jinja RRH Master Database',
+  folderName: 'CQI Jinja RRH',
+  sheetName: 'CQI Jinja RRH Master Database',
   hospital: 'Jinja Regional Referral Hospital',
   timezone: 'Africa/Kampala',
   schema: 1,
@@ -35,7 +35,7 @@ var RCQI = {
   emailLogoUrl: 'https://raw.githubusercontent.com/marksemakula/rcqi-jinja-dashboard/main/public/uganda-coat-of-arms-email.png',
   logoWidth: 130,
   dashboardUrl: 'https://rcqi-jinja-dashboard.vercel.app',
-  mailName: 'RCQI Jinja RRH',
+  mailName: 'CQI Jinja RRH',
   notifyTab: 'QI Notification List',
   notifyLogTab: 'QI Notification Log',
   // Busoga facility list pulled from the DHIS2 test instance (hmis-tests.health.go.ug), kept in the public repository.
@@ -96,7 +96,7 @@ function facilityPages_(next) {
       help: 'Choose the facility. If it is not in the list, choose "' + NOT_LISTED_ + '" and type its name on the next page.' });
   });
   items.push({ type: 'section', key: 'sec_fac_other', title: 'Health facility not in the list',
-    help: 'For a facility outside Busoga or one missing from the DHIS2 list. The RCQI team matches the name to DHIS2.' });
+    help: 'For a facility outside Busoga or one missing from the DHIS2 list. The CQI team matches the name to DHIS2.' });
   items.push({ type: 'text', key: 'facilityTyped', exportField: true, title: 'Name of the health facility', required: true,
     help: 'Type the full official name, for example Nankoma Health Centre IV.' });
   return items;
@@ -734,11 +734,11 @@ var FORM_DEFS = [
     title: 'QI Documentation Journal: Jinja RRH and Busoga Region',
     description: 'Online version of the Documentation Journal for QI activities. Register each improvement project once, ' +
       'then record every change the team tests (Part 2) and the indicator numerator and denominator each month (Part 3). ' +
-      'The RCQI dashboard turns the entries into the journal page and its annotated graph. Text entered here is shown ' +
+      'The CQI dashboard turns the entries into the journal page and its annotated graph. Text entered here is shown ' +
       'on the dashboard, so please do not include patient names, hospital numbers or other identifying details. Team ' +
       'names and email addresses are kept in the master sheet only. Everyone on a project\'s team email list receives a ' +
       'short email after each entry for that project.',
-    confirmation: 'Thank you. Your journal entry has been recorded and will appear on the RCQI dashboard shortly.',
+    confirmation: 'Thank you. Your journal entry has been recorded and will appear on the CQI dashboard shortly.',
     facilityMapped: true,
     retired: [{ title: 'Name of the facility', type: 'mc', as: 'facilityLegacy' }],
     extras: FACILITY_EXTRAS_,
@@ -805,10 +805,10 @@ var FORM_DEFS = [
  * Creates the folder, the master spreadsheet, the seven forms and the trigger.
  * Safe to run twice: a second run only prints the existing links.
  */
-function setupRCQI() {
+function setupCQI() {
   var props = PropertiesService.getScriptProperties();
   if (props.getProperty('SPREADSHEET_ID')) {
-    Logger.log('RCQI is already set up. Printing the existing links instead.');
+    Logger.log('CQI is already set up. Printing the existing links instead.');
     showLinks();
     return;
   }
@@ -864,7 +864,7 @@ function createLinkedForm_(def, ssId, folder, directory) {
 function addMissingForms() {
   var props = PropertiesService.getScriptProperties();
   var ssId = props.getProperty('SPREADSHEET_ID');
-  if (!ssId) throw new Error('Run setupRCQI first.');
+  if (!ssId) throw new Error('Run setupCQI first.');
   var folder = DriveApp.getFolderById(props.getProperty('FOLDER_ID'));
   var links = JSON.parse(props.getProperty('FORM_LINKS') || '{}');
   var ss = SpreadsheetApp.openById(ssId);
@@ -889,7 +889,7 @@ function buildForm_(def, directory) {
   var form = FormApp.create(def.title);
   addLogo_(form);
   form.setDescription(def.description);
-  form.setConfirmationMessage(def.confirmation || 'Thank you. Your submission has been recorded for the RCQI dashboard.');
+  form.setConfirmationMessage(def.confirmation || DEFAULT_CONFIRMATION_);
   form.setProgressBar(true);
   form.setShowLinkToRespondAgain(true);
   var created = {};
@@ -1046,7 +1046,7 @@ function waitForFormSheet_(ssId, formIds) {
     }
     Utilities.sleep(1500);
   }
-  throw new Error('The response tab for form ' + formIds[0] + ' did not appear. Please run setupRCQI again.');
+  throw new Error('The response tab for form ' + formIds[0] + ' did not appear. Please run setupCQI again.');
 }
 
 function styleHeader_(sheet) {
@@ -1087,8 +1087,8 @@ function addExtraColumns_(sheet, extras) {
 function writeReadMe_(ss, links) {
   var sh = ss.getSheetByName('Read Me');
   var rows = [
-    ['RCQI Jinja RRH Master Database', ''],
-    ['Purpose', 'Single source for the Regional Continuous Quality Improvement (RCQI) dashboard of Jinja Regional Referral Hospital.'],
+    ['CQI Jinja RRH Master Database', ''],
+    ['Purpose', 'Single source for the Continuous Quality Improvement (CQI) dashboard of Jinja Regional Referral Hospital.'],
     ['Important', 'Do not rename tabs, reorder form questions or edit question titles once data collection has started. The dashboard reads columns by their titles and item codes.'],
     ['HSR follow-up', 'The QI Committee updates the columns Reference No., QI Review Status, QI Action Taken and Date Closed on the HSR Reports tab. New reports receive a reference number automatically.'],
     ['Privacy', 'Free text from the HSR and the assessment forms (descriptions, causes, comments), all names, phone numbers and email addresses stay in this sheet and are never sent to the dashboard. QI Journal narratives (objective, problem, changes and notes) are published on the dashboard QI Journal page; team names and email addresses are not.'],
@@ -1483,6 +1483,42 @@ function ensureFacilityColumns_(sheet, ss) {
 /* Upgrading live forms in place                                             */
 /* ------------------------------------------------------------------------ */
 
+var DEFAULT_CONFIRMATION_ = 'Thank you. Your submission has been recorded for the CQI dashboard.';
+
+/** Earlier names written into live files, and what they are now called (used once by applyNames_). */
+var LEGACY_NAMES_ = { 'RCQI coordinator': 'CQI coordinator' };
+
+/**
+ * Brings live names into line with the current branding without touching any question or response: the Drive folder,
+ * the master sheet, every form's title, description and confirmation message, and the coordinator label.
+ */
+function applyNames_(ss, links) {
+  var done = [];
+  var folderId = PropertiesService.getScriptProperties().getProperty('FOLDER_ID');
+  if (folderId) {
+    var folder = DriveApp.getFolderById(folderId);
+    if (folder.getName() !== RCQI.folderName) { done.push('folder to ' + RCQI.folderName); folder.setName(RCQI.folderName); }
+  }
+  if (ss.getName() !== RCQI.sheetName) { done.push('sheet to ' + RCQI.sheetName); ss.rename(RCQI.sheetName); }
+  FORM_DEFS.forEach(function (def) {
+    if (!links[def.key]) return;
+    var form = FormApp.openById(links[def.key].id);
+    var confirmation = def.confirmation || DEFAULT_CONFIRMATION_;
+    if (form.getTitle() !== def.title) { form.setTitle(def.title); done.push(def.short + ' title'); }
+    if (def.description && form.getDescription() !== def.description) { form.setDescription(def.description); done.push(def.short + ' description'); }
+    if (form.getConfirmationMessage() !== confirmation) { form.setConfirmationMessage(confirmation); done.push(def.short + ' confirmation'); }
+  });
+  var list = ss.getSheetByName(RCQI.notifyTab);
+  if (list && list.getLastRow() > 1) {
+    list.getRange(2, 1, list.getLastRow() - 1, 1).getValues().forEach(function (r, i) {
+      var now = LEGACY_NAMES_[String(r[0]).trim()];
+      if (now) { list.getRange(i + 2, 1).setValue(now); done.push('coordinator label'); }
+    });
+  }
+  Logger.log('Names: ' + (done.length ? done.join('; ') : 'already up to date'));
+  return done;
+}
+
 /** Forms that upgradeForms() may change. Other forms (the HSR) are left exactly as they are. */
 var FORM_UPGRADE_KEYS = ['fives', 'hh', 'ipcBasic', 'ipcMoh', 'hfqap', 'qij'];
 
@@ -1583,6 +1619,7 @@ function upgradeForms() {
   });
   replaceFormLogos();
   setupNotifications();
+  applyNames_(ss, links);
   refreshJournalProjects();
   writeReadMe_(ss, links);
   CacheService.getScriptCache().remove('payload');
@@ -1763,8 +1800,8 @@ function journalNotification_(def, values, rowNumber, coordRows, opts) {
   }
 
   var link = RCQI.dashboardUrl + '/#journal/' + encodeURIComponent(label);
-  var footer = 'You receive these emails because your address is on this project\'s team list or on the RCQI coordinator list. ' +
-    'To be removed, ask the team leader to use "Update the team email list" in the QI Documentation Journal form, or contact the RCQI coordinator.';
+  var footer = 'You receive these emails because your address is on this project\'s team list or on the CQI coordinator list. ' +
+    'To be removed, ask the team leader to use "Update the team email list" in the QI Documentation Journal form, or contact the CQI coordinator.';
   var content = { headline: headline, title: title, facility: facility, intro: intro, facts: facts, link: link, formUrl: opts.formUrl || '', footer: footer, hasLogo: !!opts.hasLogo };
   return {
     kind: kind, label: label, headline: headline, title: title, facility: facility,
@@ -1795,7 +1832,7 @@ function renderEmailHtml_(c) {
   return '<div style="margin:0;padding:24px 12px;background:#F4F5EC;font-family:Ubuntu,system-ui,sans-serif;color:#1E2410">' +
     '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:640px;margin:0 auto;border-collapse:collapse;background:#FFFFFF;border:1px solid #DCE0CC">' +
     '<tr><td style="background:#4B5320;padding:16px 24px"><table role="presentation" cellpadding="0" cellspacing="0"><tr>' + logo +
-    '<td style="vertical-align:middle;font-family:Ubuntu,system-ui,sans-serif"><div style="color:#F4F5EC;font-size:18px;font-weight:700">RCQI Jinja RRH</div>' +
+    '<td style="vertical-align:middle;font-family:Ubuntu,system-ui,sans-serif"><div style="color:#F4F5EC;font-size:18px;font-weight:700">CQI Jinja RRH</div>' +
     '<div style="color:#E3E7D1;font-size:13px">QI Documentation Journal</div></td></tr></table></td></tr>' +
     '<tr><td style="padding:24px;font-family:Ubuntu,system-ui,sans-serif">' +
     '<div style="color:#6F823B;font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase">' + esc_(c.headline) + '</div>' +
@@ -1809,7 +1846,7 @@ function renderEmailHtml_(c) {
 }
 
 function renderEmailText_(c) {
-  var lines = ['RCQI Jinja RRH: QI Documentation Journal', '', c.headline, c.title + ' (' + c.facility + ')', '', c.intro, ''];
+  var lines = ['CQI Jinja RRH: QI Documentation Journal', '', c.headline, c.title + ' (' + c.facility + ')', '', c.intro, ''];
   c.facts.forEach(function (f) { lines.push(f[0] + ': ' + f[1]); });
   lines.push('', 'Open the project journal: ' + c.link);
   if (c.formUrl) lines.push('Add a journal entry: ' + c.formUrl);
@@ -1844,7 +1881,7 @@ function setupNotifications() {
     list = ss.insertSheet(RCQI.notifyTab);
     list.getRange(1, 1, 1, 5).setValues([['Name', 'Email', 'Facility', 'Active', 'Notes']]);
     var owner = Session.getEffectiveUser().getEmail();
-    if (owner) list.getRange(2, 1, 1, 5).setValues([['RCQI coordinator', owner, 'All facilities', 'Yes', 'Receives every QI Journal notification. Set Active to No to stop.']]);
+    if (owner) list.getRange(2, 1, 1, 5).setValues([['CQI coordinator', owner, 'All facilities', 'Yes', 'Receives every QI Journal notification. Set Active to No to stop.']]);
     var yesNo = SpreadsheetApp.newDataValidation().requireValueInList(['Yes', 'No'], true).setAllowInvalid(false).build();
     list.getRange(2, 4, list.getMaxRows() - 1, 1).setDataValidation(yesNo);
     styleHeader_(list);
@@ -1925,7 +1962,7 @@ function sendTestNotification() {
 
 /** Health check only. Data is served by doPost so that the token never travels in a URL. */
 function doGet() {
-  return json_({ ok: true, service: 'RCQI Jinja RRH data service', schema: RCQI.schema, data: 'POST a JSON body {"token": "..."} to read records' });
+  return json_({ ok: true, service: 'CQI Jinja RRH data service', schema: RCQI.schema, data: 'POST a JSON body {"token": "..."} to read records' });
 }
 
 /** Returns all de-identified records. Body: {"token": "...", "diag": false}. */

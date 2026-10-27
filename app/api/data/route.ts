@@ -3,7 +3,7 @@ import { NextResponse } from 'next/server';
 export const dynamic = 'force-dynamic';
 
 /**
- * Server-side proxy to the RCQI Apps Script data service.
+ * Server-side proxy to the CQI Apps Script data service.
  * The token stays on the server; the browser only ever sees structured, de-identified records.
  */
 export async function GET() {

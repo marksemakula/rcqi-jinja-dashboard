@@ -1,5 +1,5 @@
 /**
- * Reference catalogue of the RCQI tools: item codes, domains, thresholds and expected scores.
+ * Reference catalogue of the CQI tools: item codes, domains, thresholds and expected scores.
  * Codes must match apps-script/Code.gs; the gate script verify/check-scoring.mjs cross-checks them.
  */
 

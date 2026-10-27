@@ -108,10 +108,10 @@ export default function Dashboard() {
   const DEMO_NOTE = ' Facility names are real Busoga facilities from DHIS2, but every figure is invented and does not describe them.';
   if (!loading || payload) {
     if (mode === 'demo') {
-      if (failed) banner = { tone: 'warn', text: 'The live RCQI Google Sheet could not be reached, so demonstration data is shown.' + DEMO_NOTE, action: { label: 'Try again', run: load } };
+      if (failed) banner = { tone: 'warn', text: 'The live CQI Google Sheet could not be reached, so demonstration data is shown.' + DEMO_NOTE, action: { label: 'Try again', run: load } };
       else if (forceDemo) banner = { tone: 'info', text: 'You are viewing demonstration data for training purposes.' + DEMO_NOTE, action: connected ? { label: 'Show live data', run: () => setForceDemo(false) } : undefined };
       else if (connected) banner = { tone: 'info', text: 'The forms are live and connected. No submissions have been received yet, so illustrative demonstration data is shown. Live results replace it automatically after the first submission.' + DEMO_NOTE };
-      else banner = { tone: 'info', text: 'Demonstration data: the live RCQI Google Sheet has not been connected to this deployment yet.' + DEMO_NOTE };
+      else banner = { tone: 'info', text: 'Demonstration data: the live CQI Google Sheet has not been connected to this deployment yet.' + DEMO_NOTE };
     }
   }
 
@@ -124,7 +124,7 @@ export default function Dashboard() {
         <div className="brand">
           <Image src="/uganda-coat-of-arms.png" alt="Coat of arms of the Republic of Uganda" width={424} height={459} priority className="brand-logo" />
           <div>
-            <span className="brand-title">RCQI</span>
+            <span className="brand-title">CQI</span>
             <span className="brand-sub">Jinja Regional Referral Hospital</span>
           </div>
         </div>
@@ -137,7 +137,7 @@ export default function Dashboard() {
           ))}
         </nav>
         <div className="sidebar-foot">
-          <p>Regional Continuous Quality Improvement</p>
+          <p>Continuous Quality Improvement</p>
           <p className="muted-dark">Busoga Region, Uganda</p>
         </div>
       </aside>
@@ -149,11 +149,11 @@ export default function Dashboard() {
           </button>
           <Image src="/uganda-coat-of-arms.png" alt="" width={424} height={459} className="top-logo" aria-hidden="true" />
           <div className="title-block">
-            <h1>Regional Continuous Quality Improvement</h1>
-            <p>RCQI dashboard, Jinja Regional Referral Hospital</p>
+            <h1>Continuous Quality Improvement</h1>
+            <p>CQI dashboard, Jinja Regional Referral Hospital</p>
           </div>
           <div className="top-actions">
-            <span className={`mode-pill ${mode}`} title={mode === 'live' ? 'Live data from the RCQI Google Sheet' : 'Demonstration data'}>
+            <span className={`mode-pill ${mode}`} title={mode === 'live' ? 'Live data from the CQI Google Sheet' : 'Demonstration data'}>
               <span className="dot" aria-hidden="true" />{mode === 'live' ? 'Live data' : 'Demonstration'}
             </span>
             {updated && mode === 'live' && <span className="updated">Updated {updated} EAT</span>}
@@ -193,7 +193,7 @@ export default function Dashboard() {
         </main>
 
         <footer className="footer">
-          <p>RCQI, Jinja Regional Referral Hospital. Data collected through Google Forms and held in the RCQI master Google Sheet. Free-text fields are never published here.</p>
+          <p>CQI, Jinja Regional Referral Hospital. Data collected through Google Forms and held in the CQI master Google Sheet. Free-text fields are never published here.</p>
         </footer>
       </div>
       {menuOpen && <button type="button" className="scrim" aria-label="Close navigation" onClick={() => setMenuOpen(false)} />}

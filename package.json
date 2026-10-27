@@ -2,7 +2,7 @@
   "name": "rcqi-jinja-dashboard",
   "version": "1.0.0",
   "private": true,
-  "description": "Regional Continuous Quality Improvement (RCQI) dashboard for Jinja Regional Referral Hospital",
+  "description": "Continuous Quality Improvement (CQI) dashboard for Jinja Regional Referral Hospital",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

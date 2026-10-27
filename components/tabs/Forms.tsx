@@ -26,7 +26,7 @@ const METHODS = [
   ['IPC tool (MoH 2024)', 'Compliant answers score 1. Graded answers score 1, 0.5 or 0 (for example, IPC on the management agenda at most meetings scores 0.5). PPE stockout items score in reverse. N/A items are excluded. Area and overall scores are the share of points available.'],
   ['QI Journal', 'Each month the indicator is the numerator divided by the denominator. If a month is entered twice, the later entry replaces the earlier one. Changes are numbered by start date and marked on the graph in the month they started. Baseline is the first month recorded. Team names and email addresses stay in the master sheet.'],
   ['Facility matching', 'Facility forms ask for the district first, then list that district\'s facilities from DHIS2 (all 599 open Busoga facilities, pulled from the DHIS2 test instance on 27 October 2026). A name typed on the "not in the list" page is matched to DHIS2 by its words, allowing for abbreviations such as HC IV and small spelling slips, and is accepted only when the match is clear and the stated level agrees. Anything uncertain is flagged for a coordinator, whose choice in the DHIS2 facility column of the master sheet always wins.'],
-  ['Notifications', 'After every QI Journal entry, the project\'s team email list and the active RCQI coordinators on the QI Notification List tab receive one email each, with the entry, the result against the target and a link to the project journal. Every send is recorded on the QI Notification Log tab.'],
+  ['Notifications', 'After every QI Journal entry, the project\'s team email list and the active CQI coordinators on the QI Notification List tab receive one email each, with the entry, the result against the target and a link to the project journal. Every send is recorded on the QI Notification Log tab.'],
   ['HFQAP', 'Module percentage is the criteria met divided by the criteria expected for the facility level (HC II 211, HC III 249, HC IV 283, General Hospital and RRH 290; private facilities score health financing out of 7). Star 0 below 55%, Star 1 55 to 64%, Star 2 65 to 74%, Star 3 75 to 84%, Star 4 85 to 94%, Star 5 95% and above.']
 ];
 
@@ -55,7 +55,7 @@ function QrCard({ k, url, responses, last }: { k: FormKey; url: string; response
             {qr && <a className="btn ghost" href={qr} download={`${k}-qr-code.png`}>Download QR</a>}
           </div>
         ) : (
-          <p className="muted">The form link appears here once the dashboard is connected to the RCQI Google Sheet.</p>
+          <p className="muted">The form link appears here once the dashboard is connected to the CQI Google Sheet.</p>
         )}
       </div>
       {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -101,7 +101,7 @@ function FacilityReview({ all }: { all: TabProps['all'] }) {
 export default function Forms({ all, forms, mode, generatedAt }: TabProps) {
   return (
     <div className="tab">
-      <SectionTitle title="Forms and data" text="Every chart is fed by these Google Forms through the RCQI master Google Sheet. Share the links or print the QR codes for wards and supervision teams." />
+      <SectionTitle title="Forms and data" text="Every chart is fed by these Google Forms through the CQI master Google Sheet. Share the links or print the QR codes for wards and supervision teams." />
       <div className="forms-grid">
         {FORM_KEYS.map((k) => {
           const rows = all[k] as { date?: string | null }[];
@@ -112,11 +112,11 @@ export default function Forms({ all, forms, mode, generatedAt }: TabProps) {
       </div>
       <FacilityReview all={all} />
       <section className="card span-3 method" aria-label="How the scores are calculated">
-        <header className="card-head"><div><h3>How the scores are calculated</h3><p className="card-sub">Scoring follows the source tools held by the RCQI team at Jinja RRH.</p></div></header>
+        <header className="card-head"><div><h3>How the scores are calculated</h3><p className="card-sub">Scoring follows the source tools held by the CQI team at Jinja RRH.</p></div></header>
         <dl className="method-list">
           {METHODS.map(([t, d]) => <div key={t}><dt>{t}</dt><dd>{d}</dd></div>)}
         </dl>
-        <p className="card-sub pad">Data source: {mode === 'live' ? `RCQI master Google Sheet, refreshed ${generatedAt ? new Date(generatedAt).toLocaleString('en-GB', { timeZone: 'Africa/Kampala', dateStyle: 'medium', timeStyle: 'short' }) : 'recently'} (East Africa Time).` : 'demonstration data. No live submissions are shown.'} Free text such as descriptions, names and phone numbers is never published to this dashboard.</p>
+        <p className="card-sub pad">Data source: {mode === 'live' ? `CQI master Google Sheet, refreshed ${generatedAt ? new Date(generatedAt).toLocaleString('en-GB', { timeZone: 'Africa/Kampala', dateStyle: 'medium', timeStyle: 'short' }) : 'recently'} (East Africa Time).` : 'demonstration data. No live submissions are shown.'} Free text such as descriptions, names and phone numbers is never published to this dashboard.</p>
       </section>
     </div>
   );

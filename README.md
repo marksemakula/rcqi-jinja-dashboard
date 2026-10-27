@@ -1,6 +1,6 @@
-# RCQI Dashboard: Jinja Regional Referral Hospital
+# CQI Dashboard: Jinja Regional Referral Hospital
 
-Interactive dashboard for Regional Continuous Quality Improvement (RCQI) at Jinja Regional Referral Hospital (JRRH), Busoga Region, Uganda. Data is collected through seven Google Forms that write to one master Google Sheet. A Google Apps Script data service publishes de-identified records to this Next.js dashboard, which is hosted on Vercel and deployed automatically from GitHub.
+Interactive dashboard for Continuous Quality Improvement (CQI) at Jinja Regional Referral Hospital (JRRH), Busoga Region, Uganda. Data is collected through seven Google Forms that write to one master Google Sheet. A Google Apps Script data service publishes de-identified records to this Next.js dashboard, which is hosted on Vercel and deployed automatically from GitHub.
 
 ## Live links
 
@@ -13,7 +13,7 @@ Interactive dashboard for Regional Continuous Quality Improvement (RCQI) at Jinj
 - HFQAP Facility Assessment: https://forms.gle/hFs5hkFzZS7WtD398
 - QI Documentation Journal: https://forms.gle/BuXfJkM2TPcgZQ346
 
-The master sheet, the forms and the Apps Script project live in the "RCQI Jinja RRH" folder of the RCQI Google Drive account.
+The master sheet, the forms and the Apps Script project live in the "CQI Jinja RRH" folder of the CQI Google Drive account.
 
 ## What the dashboard covers
 
@@ -32,7 +32,7 @@ Every chart responds to the period, district, facility and department filters. C
 ## How the pieces fit together
 
 ```
-Google Forms (7) --> RCQI Jinja RRH Master Database (Google Sheet, one tab per form)
+Google Forms (7) --> CQI Jinja RRH Master Database (Google Sheet, one tab per form)
                           |
                           v
             Apps Script data service (apps-script/Code.gs, deployed as a web app)
@@ -45,8 +45,8 @@ Free text in the six assessment and reporting forms (descriptions, causes, count
 
 ## First-time setup
 
-1. Open [script.google.com](https://script.google.com), create a new project named "RCQI Jinja RRH" and paste `apps-script/Code.gs` and `apps-script/appsscript.json` (enable "Show appsscript.json" in Project Settings).
-2. Run `setupRCQI`. Approve the permissions requested by Google. The script creates the "RCQI Jinja RRH" Drive folder, the master sheet, the seven forms (with the Uganda coat of arms at the top), the HSR reference-number trigger and an API token. It also loads the DHIS2 facility list into a DHIS2 Facilities tab and creates the QI Notification List and QI Notification Log tabs.
+1. Open [script.google.com](https://script.google.com), create a new project named "CQI Jinja RRH" and paste `apps-script/Code.gs` and `apps-script/appsscript.json` (enable "Show appsscript.json" in Project Settings).
+2. Run `setupCQI`. Approve the permissions requested by Google. The script creates the "CQI Jinja RRH" Drive folder, the master sheet, the seven forms (with the Uganda coat of arms at the top), the HSR reference-number trigger and an API token. It also loads the DHIS2 facility list into a DHIS2 Facilities tab and creates the QI Notification List and QI Notification Log tabs.
 3. Deploy the project: Deploy, New deployment, Web app, Execute as Me, Who has access Anyone. Copy the web app URL (it ends in `/exec`).
 4. Run `showLinks` and copy the value after `RCQI_API_TOKEN=` from the execution log.
 5. In Vercel, add the environment variables `RCQI_API_URL` (web app URL) and `RCQI_API_TOKEN` (token) for Production, then redeploy.

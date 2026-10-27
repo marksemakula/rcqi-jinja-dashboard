@@ -7,8 +7,8 @@ import '@fontsource/ubuntu/400-italic.css';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'RCQI Dashboard | Jinja Regional Referral Hospital',
-  description: 'Regional Continuous Quality Improvement (RCQI) dashboard for Jinja Regional Referral Hospital: patient safety, hand hygiene, infection prevention and control, 5S and HFQAP.',
+  title: 'CQI Dashboard | Jinja Regional Referral Hospital',
+  description: 'Continuous Quality Improvement (CQI) dashboard for Jinja Regional Referral Hospital: patient safety, hand hygiene, infection prevention and control, 5S and HFQAP.',
   robots: { index: false, follow: false }
 };
 

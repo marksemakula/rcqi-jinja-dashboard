@@ -135,7 +135,7 @@ export default function Overview({ data, go }: TabProps) {
 
   return (
     <div className="tab">
-      <SectionTitle title="Regional quality at a glance" text="Headline results across all RCQI tools for the selected period. Select any tile, cell or bar to explore the detail." />
+      <SectionTitle title="Regional quality at a glance" text="Headline results across all CQI tools for the selected period. Select any tile, cell or bar to explore the detail." />
       <div className="kpis">
         <button type="button" className="kpi-btn" onClick={() => go('safety')}><Kpi label="Patient safety reports" value={fmtInt(kpis.hsr.n)} sub={`${fmtPct(kpis.hsr.resolvedPct)} resolved`} spark={kpis.hsr.spark} /></button>
         <button type="button" className="kpi-btn" onClick={() => go('hand')}><Kpi label="Hand hygiene compliance" value={fmtPct(kpis.hh.compliance)} sub={`${fmtInt(kpis.hh.opp)} opportunities observed`} spark={kpis.hh.spark} /></button>
