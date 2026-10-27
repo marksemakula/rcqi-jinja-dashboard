@@ -31,6 +31,8 @@ var RCQI = {
   // Coat of arms of the Republic of Uganda (transparent background) from the public GitHub repository.
   // Shown at the top of every form and in every notification email.
   logoUrl: 'https://raw.githubusercontent.com/marksemakula/rcqi-jinja-dashboard/main/public/uganda-coat-of-arms.png',
+  // A 144 px copy for email (shown at 48 px), so each notification stays small on mobile data.
+  emailLogoUrl: 'https://raw.githubusercontent.com/marksemakula/rcqi-jinja-dashboard/main/public/uganda-coat-of-arms-email.png',
   logoWidth: 130,
   dashboardUrl: 'https://rcqi-jinja-dashboard.vercel.app',
   mailName: 'RCQI Jinja RRH',
@@ -828,11 +830,12 @@ function buildForm_(def) {
   return form;
 }
 
-/** Fetches the coat of arms of Uganda (transparent PNG). Returns null if it cannot be fetched. */
-function fetchLogo_() {
-  if (!RCQI.logoUrl) return null;
+/** Fetches the coat of arms of Uganda (transparent PNG), full size or the small email copy. Returns null if it cannot be fetched. */
+function fetchLogo_(url) {
+  url = url || RCQI.logoUrl;
+  if (!url) return null;
   try {
-    return UrlFetchApp.fetch(RCQI.logoUrl).getBlob().setName('uganda-coat-of-arms.png');
+    return UrlFetchApp.fetch(url).getBlob().setName('uganda-coat-of-arms.png');
   } catch (err) {
     Logger.log('Coat of arms could not be fetched: ' + err);
     return null;
@@ -1476,7 +1479,7 @@ function notifyJournalEntry_(sheet, rowNumber) {
   var links = JSON.parse(props.getProperty('FORM_LINKS') || '{}');
   var ss = sheet.getParent();
   var list = ss.getSheetByName(RCQI.notifyTab);
-  var logo = fetchLogo_();
+  var logo = fetchLogo_(RCQI.emailLogoUrl);
   var msg = journalNotification_(defByKey_('qij'), sheet.getDataRange().getValues(), rowNumber,
     list ? list.getDataRange().getValues() : [[]],
     { tz: RCQI.timezone, formUrl: links.qij ? links.qij.shortUrl : '', hasLogo: !!logo });
@@ -1504,7 +1507,7 @@ function sendTestNotification() {
     row({ 'Timestamp': '2026-10-02T08:00:00.000Z', 'What would you like to record?': 'Record monthly results', 'Which QI project are these results for?': 'Demo Facility A HC IV: Early first antenatal visit',
       'Month of measurement': '2026-09-15', 'Numerator for the month': 19, 'Denominator for the month': 43,
       'Notes on the indicator': 'Latest month: gains sustained.', 'Other observed effects and lessons learnt': 'Staff report better teamwork.' })];
-  var logo = fetchLogo_();
+  var logo = fetchLogo_(RCQI.emailLogoUrl);
   var links = JSON.parse(PropertiesService.getScriptProperties().getProperty('FORM_LINKS') || '{}');
   var msg = journalNotification_(def, values, 4, [['Email'], [owner]], { tz: RCQI.timezone, formUrl: links.qij ? links.qij.shortUrl : '', hasLogo: !!logo });
   msg.subject = 'Test: ' + msg.subject;
