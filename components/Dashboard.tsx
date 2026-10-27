@@ -60,9 +60,16 @@ export default function Dashboard() {
   }, [load]);
 
   useEffect(() => {
+    // #journal opens a tab; #journal/<project label> (the link in notification emails) also opens that project.
     const fromHash = () => {
-      const h = window.location.hash.replace('#', '') as TabId;
-      if (TABS.some((t) => t.id === h)) setTab(h);
+      const raw = window.location.hash.replace(/^#/, '');
+      const slash = raw.indexOf('/');
+      const id = (slash > -1 ? raw.slice(0, slash) : raw) as TabId;
+      if (!TABS.some((t) => t.id === id)) return;
+      setTab(id);
+      if (slash > -1) {
+        try { setFocus(decodeURIComponent(raw.slice(slash + 1))); } catch { setFocus(null); }
+      }
     };
     fromHash();
     window.addEventListener('hashchange', fromHash);
@@ -109,7 +116,7 @@ export default function Dashboard() {
     <div className="shell">
       <aside className={`sidebar${menuOpen ? ' open' : ''}`}>
         <div className="brand">
-          <Image src="/jrrh-logo.png" alt="Ministry of Health, Jinja Regional Referral Hospital logo" width={68} height={68} priority className="brand-logo" />
+          <Image src="/uganda-coat-of-arms.png" alt="Coat of arms of the Republic of Uganda" width={424} height={459} priority className="brand-logo" />
           <div>
             <span className="brand-title">RCQI</span>
             <span className="brand-sub">Jinja Regional Referral Hospital</span>
@@ -134,7 +141,7 @@ export default function Dashboard() {
           <button type="button" className="menu-btn" onClick={() => setMenuOpen((m) => !m)} aria-label="Open navigation" aria-expanded={menuOpen}>
             <svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true"><path d="M3 5h14M3 10h14M3 15h14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square" /></svg>
           </button>
-          <Image src="/jrrh-logo.png" alt="" width={40} height={40} className="top-logo" aria-hidden="true" />
+          <Image src="/uganda-coat-of-arms.png" alt="" width={424} height={459} className="top-logo" aria-hidden="true" />
           <div className="title-block">
             <h1>Regional Continuous Quality Improvement</h1>
             <p>RCQI dashboard, Jinja Regional Referral Hospital</p>

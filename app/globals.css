@@ -260,8 +260,9 @@ nav { display: flex; flex-direction: column; gap: 2px; }
 .data-table td:first-child { white-space: nowrap; font-weight: 500; color: var(--ag-800); }
 .toolbar-field { display: flex; flex-direction: column; gap: 6px; }
 .toolbar-field > span { font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-muted); }
-.brand-logo { flex: none; border-radius: 0; padding: 3px; background: var(--card); box-shadow: 0 0 0 3px rgba(194, 165, 90, 0.55), 0 6px 18px rgba(40, 49, 15, 0.45); }
-.top-logo { display: none; border-radius: 0; background: var(--card); padding: 2px; }
+/* The Uganda coat of arms is shown as supplied, on a transparent background with no frame. */
+.brand-logo { flex: none; width: auto; height: 74px; border-radius: 0; background: none; }
+.top-logo { display: none; width: auto; height: 40px; border-radius: 0; background: none; }
 @media (max-width: 900px) { .top-logo { display: block; } }
 @media (max-width: 600px) {
   .filters { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 12px; }
@@ -276,7 +277,8 @@ nav { display: flex; flex-direction: column; gap: 2px; }
 .select.wide { min-width: 280px; max-width: 560px; flex: 2 1 320px; }
 .journal-sheet { background: var(--card); border: 1px solid var(--ag-700); border-top: 6px solid var(--ag-600); padding: 24px 28px 20px; margin-top: 18px; box-shadow: var(--shadow); }
 .journal-head { display: grid; grid-template-columns: auto 1fr minmax(200px, 280px); gap: 18px; align-items: center; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
-.journal-logo { background: var(--card); }
+.journal-logo { width: auto; height: 70px; background: none; }
+.journal-note { margin: -4px 0 16px; max-width: 900px; }
 .journal-kicker { margin: 0; font-size: 11.5px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-muted); }
 .journal-titles h2 { margin: 2px 0 6px; font-size: 21px; font-weight: 700; color: var(--ag-900); font-style: italic; }
 .objective-box { border: 2px solid var(--ag-900); display: flex; flex-direction: column; }

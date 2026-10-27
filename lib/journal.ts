@@ -4,7 +4,7 @@
  */
 import type { QijRec } from './types';
 
-export type EntryKind = 'project' | 'change' | 'month' | 'unknown';
+export type EntryKind = 'project' | 'change' | 'month' | 'team' | 'unknown';
 
 export interface JournalChange {
   no: number;
@@ -52,13 +52,14 @@ export interface JournalProject {
   status: 'Active' | 'Completed';
 }
 
-export const JOURNAL_ENTRY_TYPES = ['Register a new QI project', 'Record a change tested', 'Record monthly results'];
+export const JOURNAL_ENTRY_TYPES = ['Register a new QI project', 'Record a change tested', 'Record monthly results', 'Update the team email list'];
 
 export function entryKind(r: QijRec): EntryKind {
   const t = (r.entryType || '').toLowerCase();
   if (t.startsWith('register')) return 'project';
   if (t.startsWith('record a change')) return 'change';
   if (t.startsWith('record monthly')) return 'month';
+  if (t.startsWith('update the team')) return 'team'; // changes who is notified; nothing to show on the journal page
   return 'unknown';
 }
 

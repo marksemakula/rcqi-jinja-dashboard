@@ -6,8 +6,9 @@
  * How to use
  *   1. Run setupRCQI() once. It creates a Drive folder, the master spreadsheet,
  *      seven Google Forms linked to their own tabs, the HSR reference trigger and
- *      an API token. On an existing installation, run addMissingForms() instead
- *      to add any new form, then publish a new version of the web app.
+ *      an API token; then run setupNotifications(). On an existing installation,
+ *      run addMissingForms() to add a new form or upgradeForms() to add new
+ *      questions to a live form, then publish a new version of the web app.
  *   2. Deploy this project as a web app (Execute as: Me, Who has access: Anyone).
  *   3. Give the web app URL and the token (run showLinks() to print them) to the
  *      dashboard as RCQI_API_URL and RCQI_API_TOKEN. The dashboard reads data by
@@ -27,8 +28,14 @@ var RCQI = {
   headerColour: '#3B4420',
   headerText: '#F4F5EC',
   font: 'Ubuntu',
-  // Jinja RRH logo from the public GitHub repository. Shown at the top of every form.
-  logoUrl: 'https://raw.githubusercontent.com/marksemakula/rcqi-jinja-dashboard/main/public/jrrh-logo-800.png'
+  // Coat of arms of the Republic of Uganda (transparent background) from the public GitHub repository.
+  // Shown at the top of every form and in every notification email.
+  logoUrl: 'https://raw.githubusercontent.com/marksemakula/rcqi-jinja-dashboard/main/public/uganda-coat-of-arms.png',
+  logoWidth: 130,
+  dashboardUrl: 'https://rcqi-jinja-dashboard.vercel.app',
+  mailName: 'RCQI Jinja RRH',
+  notifyTab: 'QI Notification List',
+  notifyLogTab: 'QI Notification Log'
 };
 
 var LISTS = {
@@ -663,13 +670,14 @@ var FORM_DEFS = [
       'then record every change the team tests (Part 2) and the indicator numerator and denominator each month (Part 3). ' +
       'The RCQI dashboard turns the entries into the journal page and its annotated graph. Text entered here is shown ' +
       'on the dashboard, so please do not include patient names, hospital numbers or other identifying details. Team ' +
-      'names are kept in the master sheet only.',
+      'names and email addresses are kept in the master sheet only. Everyone on a project\'s team email list receives a ' +
+      'short email after each entry for that project.',
     confirmation: 'Thank you. Your journal entry has been recorded and will appear on the RCQI dashboard shortly.',
     items: [
       { type: 'mc', key: 'entryType', title: 'What would you like to record?', required: true,
-        options: ['Register a new QI project', 'Record a change tested', 'Record monthly results'],
-        routes: ['sec_reg', 'sec_change', 'sec_month'],
-        help: 'Register a project once (journal header and Part 1). Record each change tested (Part 2) and each month of results (Part 3) against the registered project.' },
+        options: ['Register a new QI project', 'Record a change tested', 'Record monthly results', 'Update the team email list'],
+        routes: ['sec_reg', 'sec_change', 'sec_month', 'sec_team'],
+        help: 'Register a project once (journal header and Part 1). Record each change tested (Part 2) and each month of results (Part 3) against the registered project. To update a project\'s details, register it again with the same facility and short title. Use the team email list option to add or remove people who receive notifications.' },
       { type: 'section', key: 'sec_reg', title: 'Register a QI project',
         help: 'Journal header and Part 1: the improvement objective, its indicator and the problem being addressed.' },
       { type: 'mc', key: 'facility', title: 'Name of the facility', required: true, options: [RCQI.hospital], other: true },
@@ -680,6 +688,8 @@ var FORM_DEFS = [
         help: 'For example: Reduce hypothermia on admission to NICU. Teams choose this title when recording changes and monthly results, so please keep it unique within the facility.' },
       { type: 'text', key: 'teamLeader', title: 'Team leader', required: true },
       { type: 'paragraph', key: 'teamMembers', countAs: 'teamSize', title: 'Team members', required: false, help: 'One name per line. Names stay in the master sheet; the dashboard shows only the team size.' },
+      { type: 'paragraph', key: 'teamEmails', emails: true, title: 'Team member email addresses for notifications', required: false,
+        help: 'One address per line, or separated by commas. Everyone listed receives an email when this project is registered or updated and after every change or monthly result recorded for it. Addresses stay in the master sheet and are never shown on the dashboard.' },
       { type: 'date', key: 'startDate', title: 'Start date for the improvement project', required: true },
       { type: 'date', key: 'endDate', title: 'Planned end date', required: false },
       { type: 'paragraph', key: 'objective', exportField: true, title: 'Improvement objective', required: true },
@@ -706,7 +716,12 @@ var FORM_DEFS = [
       { type: 'paragraph', key: 'indicatorNotes', exportField: true, title: 'Notes on the indicator', required: false,
         help: 'Any additional comments on the performance of the indicator, including anything from the changes worksheet or the graph that might explain the trend.' },
       { type: 'paragraph', key: 'effects', exportField: true, title: 'Other observed effects and lessons learnt', required: false,
-        help: 'Effects, positive or negative, observed as a result of the QI effort: feedback from patients, changes in performance or motivation, improved efficiency, or the story of a patient helped. Do not include names or identifying details.' }
+        help: 'Effects, positive or negative, observed as a result of the QI effort: feedback from patients, changes in performance or motivation, improved efficiency, or the story of a patient helped. Do not include names or identifying details.' },
+      { type: 'section', key: 'sec_team', goTo: 'SUBMIT', title: 'Team email list',
+        help: 'Add or remove the email addresses that receive notifications for a registered project. Addresses stay in the master sheet and are never shown on the dashboard.' },
+      { type: 'dropdown', key: 'project_t', as: 'project', dynamic: 'projects', title: 'Which QI project is this team update for?', required: true, options: ['No projects registered yet'] },
+      { type: 'paragraph', key: 'emailsAdd', emails: true, title: 'Email addresses to add', required: false, help: 'One address per line, or separated by commas.' },
+      { type: 'paragraph', key: 'emailsRemove', emails: true, title: 'Email addresses to remove', required: false, help: 'These people stop receiving notifications for this project.' }
     ]
   }
 ];
@@ -813,29 +828,51 @@ function buildForm_(def) {
   return form;
 }
 
-/** Places the Jinja RRH logo at the top of a form. Skipped quietly if the logo cannot be fetched. */
-function addLogo_(form) {
-  if (!RCQI.logoUrl) return false;
+/** Fetches the coat of arms of Uganda (transparent PNG). Returns null if it cannot be fetched. */
+function fetchLogo_() {
+  if (!RCQI.logoUrl) return null;
   try {
-    var blob = UrlFetchApp.fetch(RCQI.logoUrl).getBlob().setName('jrrh-logo.png');
-    var img = form.addImageItem().setImage(blob).setAlignment(FormApp.Alignment.CENTER).setWidth(150);
-    form.moveItem(img.getIndex(), 0);
-    return true;
+    return UrlFetchApp.fetch(RCQI.logoUrl).getBlob().setName('uganda-coat-of-arms.png');
   } catch (err) {
-    Logger.log('Logo not added: ' + err);
-    return false;
+    Logger.log('Coat of arms could not be fetched: ' + err);
+    return null;
   }
 }
 
-/** Adds the logo to forms created before the logo was available. Safe to run more than once. */
-function addLogoToForms() {
+/** Places the coat of arms at the top of a form. Skipped quietly if the image cannot be fetched. */
+function addLogo_(form, blob) {
+  blob = blob || fetchLogo_();
+  if (!blob) return false;
+  var img = form.addImageItem().setImage(blob).setAlignment(FormApp.Alignment.CENTER).setWidth(RCQI.logoWidth);
+  form.moveItem(img.getIndex(), 0);
+  return true;
+}
+
+/**
+ * Puts the coat of arms at the top of every form: replaces the image already there (keeping its place)
+ * or adds one. Safe to run more than once.
+ */
+function replaceFormLogos() {
   var links = JSON.parse(PropertiesService.getScriptProperties().getProperty('FORM_LINKS') || '{}');
-  Object.keys(links).forEach(function (key) {
-    var form = FormApp.openById(links[key].id);
-    var hasImage = form.getItems(FormApp.ItemType.IMAGE).length > 0;
-    if (!hasImage) Logger.log(key + (addLogo_(form) ? ': logo added' : ': logo could not be added'));
+  var blob = fetchLogo_();
+  if (!blob) throw new Error('The coat of arms could not be fetched from ' + RCQI.logoUrl);
+  FORM_DEFS.forEach(function (def) {
+    if (!links[def.key]) return;
+    var form = FormApp.openById(links[def.key].id);
+    var images = form.getItems(FormApp.ItemType.IMAGE);
+    if (images.length) {
+      images[0].asImageItem().setImage(blob).setAlignment(FormApp.Alignment.CENTER).setWidth(RCQI.logoWidth);
+      if (images[0].getIndex() !== 0) form.moveItem(images[0].getIndex(), 0);
+      Logger.log(def.short + ': coat of arms replaced');
+    } else {
+      addLogo_(form, blob);
+      Logger.log(def.short + ': coat of arms added');
+    }
   });
 }
+
+/** Kept for older instructions: same as replaceFormLogos. */
+function addLogoToForms() { replaceFormLogos(); }
 
 function addItem_(form, it) {
   var item;
@@ -870,6 +907,12 @@ function addItem_(form, it) {
       break;
     case 'paragraph':
       item = form.addParagraphTextItem().setTitle(it.title);
+      if (it.emails) {
+        item.setValidation(FormApp.createParagraphTextValidation()
+          .setHelpText('Please enter valid email addresses, one per line or separated by commas.')
+          .requireTextMatchesPattern(EMAIL_LIST_PATTERN)
+          .build());
+      }
       break;
     case 'date':
       item = form.addDateItem().setTitle(it.title);
@@ -948,15 +991,17 @@ function writeReadMe_(ss, links) {
     ['Purpose', 'Single source for the Regional Continuous Quality Improvement (RCQI) dashboard of Jinja Regional Referral Hospital.'],
     ['Important', 'Do not rename tabs, reorder form questions or edit question titles once data collection has started. The dashboard reads columns by their titles and item codes.'],
     ['HSR follow-up', 'The QI Committee updates the columns Reference No., QI Review Status, QI Action Taken and Date Closed on the HSR Reports tab. New reports receive a reference number automatically.'],
-    ['Privacy', 'Free text from the HSR and the assessment forms (descriptions, causes, comments), all names and phone numbers stay in this sheet and are never sent to the dashboard. QI Journal narratives (objective, problem, changes and notes) are published on the dashboard QI Journal page; team names are not.'],
+    ['Privacy', 'Free text from the HSR and the assessment forms (descriptions, causes, comments), all names, phone numbers and email addresses stay in this sheet and are never sent to the dashboard. QI Journal narratives (objective, problem, changes and notes) are published on the dashboard QI Journal page; team names and email addresses are not.'],
+    ['QI Journal notifications', 'Every QI Journal entry emails the project\'s team list (addresses from the registration and from any "Update the team email list" entries) and each person on the ' + RCQI.notifyTab + ' tab whose Active column is Yes and whose Facility is "All facilities" or the project\'s facility. Every send is recorded on the ' + RCQI.notifyLogTab + ' tab. A personal Gmail account can send to about 100 recipients a day.'],
     ['', ''],
     ['Form', 'Share link']
   ];
+  var formRow = rows.length;
   FORM_DEFS.forEach(function (def) { rows.push([def.short, links[def.key].shortUrl]); });
   sh.getRange(1, 1, rows.length, 2).setValues(rows);
   sh.getRange(1, 1, sh.getMaxRows(), sh.getMaxColumns()).setFontFamily(RCQI.font);
   sh.getRange(1, 1).setFontSize(14).setFontWeight('bold').setFontColor(RCQI.headerColour);
-  sh.getRange(7, 1, 1, 2).setBackground(RCQI.headerColour).setFontColor(RCQI.headerText).setFontWeight('bold');
+  sh.getRange(formRow, 1, 1, 2).setBackground(RCQI.headerColour).setFontColor(RCQI.headerText).setFontWeight('bold');
   sh.setColumnWidth(1, 220);
   sh.setColumnWidth(2, 760);
   sh.getRange(1, 2, rows.length, 1).setWrap(true);
@@ -986,7 +1031,11 @@ function onRcqiFormSubmit(e) {
   if (!e || !e.range) return;
   CacheService.getScriptCache().remove('payload');
   var sheet = e.range.getSheet();
-  if (sheet.getName() === 'QI Journal') { refreshJournalProjects(); return; }
+  if (sheet.getName() === 'QI Journal') {
+    try { refreshJournalProjects(); } catch (err) { Logger.log('Project list not refreshed: ' + err); }
+    try { notifyJournalEntry_(sheet, e.range.getRow()); } catch (err) { Logger.log('Notification failed: ' + err); }
+    return;
+  }
   if (sheet.getName() !== 'HSR Reports') return;
   var lock = LockService.getScriptLock();
   lock.waitLock(20000);
@@ -1039,6 +1088,431 @@ function refreshJournalProjects() {
     });
   });
   Logger.log('QI Journal project list: ' + labels.length + ' project(s).');
+}
+
+/* ------------------------------------------------------------------------ */
+/* Upgrading live forms in place                                             */
+/* ------------------------------------------------------------------------ */
+
+/** Forms that upgradeForms() may change. Other forms are left exactly as they are. */
+var FORM_UPGRADE_KEYS = ['qij'];
+
+var ITEM_TYPE_FOR_ = {
+  section: 'PAGE_BREAK', mc: 'MULTIPLE_CHOICE', checkbox: 'CHECKBOX', dropdown: 'LIST', text: 'TEXT',
+  number: 'TEXT', paragraph: 'PARAGRAPH_TEXT', date: 'DATE', time: 'TIME', grid: 'GRID'
+};
+
+/**
+ * Brings an existing form up to date with its definition without touching its responses:
+ * adds any question or section that is missing (in its proper place), refreshes help text and description,
+ * and reapplies the branching. Existing questions are matched by title and type and never removed or renamed.
+ * Returns the titles added. With dryRun nothing is changed.
+ */
+function syncFormItems_(form, def, dryRun) {
+  var items = form.getItems();
+  var match = function (it) {
+    var type = FormApp.ItemType[ITEM_TYPE_FOR_[it.type]];
+    for (var i = 0; i < items.length; i++) {
+      if (items[i].getTitle() === it.title && items[i].getType() == type) return items[i];
+    }
+    return null;
+  };
+  var found = {};
+  var added = [];
+  var cursor = 0;
+  items.forEach(function (item) {
+    if (item.getType() == FormApp.ItemType.IMAGE && item.getIndex() === 0) cursor = 1; // keep the coat of arms first
+  });
+  def.items.forEach(function (it) {
+    var existing = match(it);
+    if (existing) {
+      found[it.key || it.title] = existing;
+      cursor = Math.max(cursor, existing.getIndex() + 1);
+      if (!dryRun && it.help && existing.getHelpText() !== it.help) existing.setHelpText(it.help);
+      return;
+    }
+    added.push(it.title);
+    if (dryRun) return;
+    var item = addItem_(form, it);
+    form.moveItem(item.getIndex(), cursor);
+    found[it.key || it.title] = item;
+    cursor += 1;
+  });
+  if (dryRun) return added;
+  if (def.description && form.getDescription() !== def.description) form.setDescription(def.description);
+  // Items read from the form are generic and need converting; items just created are already typed.
+  var asPage = function (item) { return item.asPageBreakItem ? item.asPageBreakItem() : item; };
+  var asChoice = function (item) { return item.asMultipleChoiceItem ? item.asMultipleChoiceItem() : item; };
+  def.items.forEach(function (it) {
+    if (it.type === 'section' && it.goTo === 'SUBMIT' && found[it.key]) {
+      asPage(found[it.key]).setGoToPage(FormApp.PageNavigationType.SUBMIT);
+    }
+    if (!it.routes || !found[it.key]) return;
+    var router = asChoice(found[it.key]);
+    router.setChoices(it.options.map(function (label, i) {
+      return router.createChoice(label, asPage(found[it.routes[i]]));
+    }));
+  });
+  return added;
+}
+
+/**
+ * Run from the editor after pasting a new Code.gs: adds new questions to the live forms listed in
+ * FORM_UPGRADE_KEYS, puts the coat of arms on every form, creates the notification tabs and refreshes the
+ * journal project lists. Responses and existing questions are never changed. Safe to run more than once.
+ */
+function upgradeForms() {
+  var props = PropertiesService.getScriptProperties();
+  var links = JSON.parse(props.getProperty('FORM_LINKS') || '{}');
+  var ss = SpreadsheetApp.openById(props.getProperty('SPREADSHEET_ID'));
+  FORM_DEFS.forEach(function (def) {
+    if (!links[def.key] || FORM_UPGRADE_KEYS.indexOf(def.key) === -1) return;
+    var form = FormApp.openById(links[def.key].id);
+    var planned = syncFormItems_(form, def, true);
+    // Safety: if most questions are not recognised, something is wrong with the matching; change nothing.
+    if (planned.length > def.items.length / 2) {
+      throw new Error(def.short + ': ' + planned.length + ' of ' + def.items.length + ' questions were not found, so nothing was changed. Planned: ' + planned.join(' | '));
+    }
+    var added = syncFormItems_(form, def, false);
+    Logger.log(def.short + ': ' + (added.length ? 'added ' + added.join(' | ') : 'already up to date'));
+    var tab = ss.getSheetByName(def.tab);
+    if (tab) { SpreadsheetApp.flush(); styleHeader_(tab); }
+  });
+  replaceFormLogos();
+  setupNotifications();
+  refreshJournalProjects();
+  writeReadMe_(ss, links);
+  CacheService.getScriptCache().remove('payload');
+  Logger.log('UPGRADE COMPLETE');
+}
+
+/* ------------------------------------------------------------------------ */
+/* QI Journal notifications                                                  */
+/* ------------------------------------------------------------------------ */
+
+var EMAIL_RE = /^[A-Za-z0-9._%+'-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)*\.[A-Za-z]{2,}$/;
+/** Google Forms validation for a list of addresses separated by commas, semicolons, spaces or new lines. */
+var EMAIL_LIST_PATTERN = "^[\\s,;]*[A-Za-z0-9._%+'-]+@[A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)*\\.[A-Za-z]{2,}" +
+  "([\\s,;]+[A-Za-z0-9._%+'-]+@[A-Za-z0-9-]+(\\.[A-Za-z0-9-]+)*\\.[A-Za-z]{2,})*[\\s,;]*$";
+var MONTH_NAMES_ = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+var NO_PROJECT_ = 'No projects registered yet';
+
+/** Splits free text into unique, valid, lower-case email addresses. */
+function splitEmails_(text) {
+  var out = [];
+  String(text || '').split(/[\s,;]+/).forEach(function (raw) {
+    var e = raw.trim().replace(/^<|>$/g, '').toLowerCase();
+    if (e && EMAIL_RE.test(e) && out.indexOf(e) === -1) out.push(e);
+  });
+  return out;
+}
+
+function union_(a, b) {
+  var out = a.slice();
+  b.forEach(function (x) { if (out.indexOf(x) === -1) out.push(x); });
+  return out;
+}
+
+function defByKey_(key) {
+  return FORM_DEFS.filter(function (d) { return d.key === key; })[0];
+}
+
+/** project, change, month or team, matching entryKind in the dashboard. */
+function entryKind_(rec) {
+  var t = String(rec.entryType || '').toLowerCase();
+  if (t.indexOf('register') === 0) return 'project';
+  if (t.indexOf('record a change') === 0) return 'change';
+  if (t.indexOf('record monthly') === 0) return 'month';
+  if (t.indexOf('update the team') === 0) return 'team';
+  return 'unknown';
+}
+
+/** A project's team email list after the records up to and including index upto (registrations add, team updates add then remove). */
+function teamEmailsFor_(records, label, upto) {
+  var list = [];
+  records.forEach(function (r, i) {
+    if (i > upto) return;
+    var kind = entryKind_(r);
+    if (kind === 'project' && projectLabel_(r) === label) list = union_(list, splitEmails_(r.teamEmails));
+    if (kind === 'team' && r.project === label) {
+      list = union_(list, splitEmails_(r.emailsAdd));
+      var gone = splitEmails_(r.emailsRemove);
+      list = list.filter(function (e) { return gone.indexOf(e) === -1; });
+    }
+  });
+  return list;
+}
+
+/** Active coordinators for a facility from the QI Notification List tab (header row plus rows). */
+function coordinatorEmails_(rows, facility) {
+  if (!rows || rows.length < 2) return [];
+  var head = rows[0].map(function (h) { return String(h).trim().toLowerCase(); });
+  var ce = head.indexOf('email'), cf = head.indexOf('facility'), ca = head.indexOf('active');
+  if (ce < 0) return [];
+  var want = String(facility || '').trim().toLowerCase();
+  var out = [];
+  rows.slice(1).forEach(function (r) {
+    var active = ca < 0 ? 'yes' : String(r[ca]).trim().toLowerCase();
+    var fac = cf < 0 ? '' : String(r[cf]).trim().toLowerCase();
+    if (active !== 'yes') return;
+    if (fac && fac !== 'all facilities' && fac !== want) return;
+    out = union_(out, splitEmails_(r[ce]));
+  });
+  return out;
+}
+
+function monthName_(key) {
+  var m = String(key || '').match(/^(\d{4})-(\d{2})/);
+  return m ? MONTH_NAMES_[Number(m[2]) - 1] + ' ' + m[1] : '';
+}
+
+function fmtPct_(v) { return (Math.round(v * 10) / 10).toFixed(1) + '%'; }
+function fmtPts_(v) { var x = Math.round(Math.abs(v) * 10) / 10; return x.toFixed(1) + (x === 1 ? ' point' : ' points'); }
+function fmtDate_(iso) {
+  var m = String(iso || '').match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return m ? Number(m[3]) + ' ' + MONTH_NAMES_[Number(m[2]) - 1] + ' ' + m[1] : '';
+}
+
+/**
+ * Builds the notification for the journal entry on sheet row rowNumber (1-based, header is row 1).
+ * Pure: values is the QI Journal tab, coordRows the QI Notification List tab. Returns null for rows it cannot describe.
+ */
+function journalNotification_(def, values, rowNumber, coordRows, opts) {
+  opts = opts || {};
+  var records = parseValues_(def, values, opts.tz || RCQI.timezone, { includePrivate: true }).records;
+  var idx = -1;
+  records.forEach(function (r, i) { if (r.id === def.key + '-' + rowNumber) idx = i; });
+  if (idx < 0) return null;
+  var rec = records[idx];
+  var kind = entryKind_(rec);
+  if (kind === 'unknown') return null;
+  var label = kind === 'project' ? projectLabel_(rec) : String(rec.project || NO_PROJECT_);
+  var reg = null;
+  var earlierReg = false;
+  records.forEach(function (r, i) {
+    if (i > idx || entryKind_(r) !== 'project' || projectLabel_(r) !== label) return;
+    if (i < idx) earlierReg = true;
+    reg = r;
+  });
+  var split = label.indexOf(': ');
+  var facility = reg ? String(reg.facility).trim() : (split > 0 ? label.slice(0, split) : 'Project not registered');
+  var title = reg ? String(reg.projectTitle).trim() : (split > 0 ? label.slice(split + 2) : label);
+  var team = teamEmailsFor_(records, label, idx);
+  var coordinators = coordinatorEmails_(coordRows, facility);
+  var facts = [];
+  var add = function (k, v) { if (v !== null && v !== undefined && String(v).trim() !== '') facts.push([k, String(v)]); };
+  var headline, intro;
+
+  if (kind === 'project') {
+    headline = earlierReg ? 'Project details updated' : 'New QI project registered';
+    intro = earlierReg
+      ? 'The project details have been updated in the QI Documentation Journal. The latest registration is now used on the dashboard.'
+      : 'A new improvement project has been registered in the QI Documentation Journal.';
+    add('District', rec.district); add('Department or unit', rec.department); add('Team leader', rec.teamLeader);
+    add('Start date', fmtDate_(rec.startDate)); add('Planned end date', fmtDate_(rec.endDate));
+    add('Improvement objective', rec.objective); add('Indicator', rec.indicator);
+    add('Numerator', rec.numeratorDef); add('Denominator', rec.denominatorDef);
+    add('Target', rec.target !== null && rec.target !== undefined ? rec.target + '%' : null);
+    add('Problem', rec.problem);
+    add('Team email list', team.length + (team.length === 1 ? ' person' : ' people'));
+  } else if (kind === 'change') {
+    var changes = [];
+    records.forEach(function (r, i) {
+      if (i <= idx && entryKind_(r) === 'change' && r.project === label && r.change) changes.push({ r: r, i: i });
+    });
+    changes.sort(function (a, b) { return String(a.r.changeStart || '').localeCompare(String(b.r.changeStart || '')) || a.i - b.i; });
+    var no = 1;
+    changes.forEach(function (c, k) { if (c.i === idx) no = k + 1; });
+    headline = 'Change C' + no + ' recorded';
+    intro = 'The team has recorded a change tested (Part 2 of the journal). It is marked C' + no + ' on the project graph.';
+    add('Change tested', rec.change); add('Start date', fmtDate_(rec.changeStart)); add('End date', fmtDate_(rec.changeEnd));
+    add('Improvement registered', rec.improved); add('Comments', rec.changeComments);
+  } else if (kind === 'month') {
+    var key = String(rec.month || '').slice(0, 7);
+    var months = {};
+    records.forEach(function (r, i) {
+      if (i > idx || entryKind_(r) !== 'month' || r.project !== label || !r.month) return;
+      var d = Number(r.denominator);
+      if (d > 0) months[String(r.month).slice(0, 7)] = Number(r.numerator) / d * 100;
+    });
+    headline = 'Results for ' + monthName_(key) + ' recorded';
+    intro = 'Monthly results have been recorded for this project (Part 3 of the journal).';
+    var pct = months[key];
+    add('Month', monthName_(key)); add('Numerator', rec.numerator); add('Denominator', rec.denominator);
+    if (pct !== undefined) {
+      add('Result', fmtPct_(pct));
+      var target = reg && reg.target !== null && reg.target !== undefined ? Number(reg.target) : null;
+      if (target !== null) add('Against the target', pct >= target ? 'Target of ' + target + '% met' : fmtPts_(target - pct) + ' below the target of ' + target + '%');
+      var prev = Object.keys(months).filter(function (k) { return k < key; }).sort().pop();
+      if (prev) {
+        var diff = pct - months[prev];
+        var dir = Math.abs(diff) < 0.05 ? 'No change on ' : (diff > 0 ? 'Up ' + fmtPts_(diff) + ' on ' : 'Down ' + fmtPts_(diff) + ' on ');
+        add('Previous month', dir + monthName_(prev) + ' (' + fmtPct_(months[prev]) + ')');
+      }
+    }
+    add('Notes on the indicator', rec.indicatorNotes); add('Other observed effects', rec.effects);
+  } else {
+    var added = splitEmails_(rec.emailsAdd), removed = splitEmails_(rec.emailsRemove);
+    headline = 'Team email list updated';
+    intro = 'The list of people who receive notifications for this project has been updated.';
+    add('Addresses added', String(added.length)); add('Addresses removed', String(removed.length));
+    add('People now on the list', String(team.length));
+  }
+
+  var link = RCQI.dashboardUrl + '/#journal/' + encodeURIComponent(label);
+  var footer = 'You receive these emails because your address is on this project\'s team list or on the RCQI coordinator list. ' +
+    'To be removed, ask the team leader to use "Update the team email list" in the QI Documentation Journal form, or contact the RCQI coordinator.';
+  var content = { headline: headline, title: title, facility: facility, intro: intro, facts: facts, link: link, formUrl: opts.formUrl || '', footer: footer, hasLogo: !!opts.hasLogo };
+  return {
+    kind: kind, label: label, headline: headline, title: title, facility: facility,
+    recipients: union_(team, coordinators), team: team, coordinators: coordinators,
+    subject: headline + ': ' + title + ' (' + facility + ')',
+    html: renderEmailHtml_(content), text: renderEmailText_(content), link: link
+  };
+}
+
+function esc_(s) {
+  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+/** Army green, square-cornered HTML email with the coat of arms, in Ubuntu where the reader has it. */
+function renderEmailHtml_(c) {
+  var rows = c.facts.map(function (f) {
+    return '<tr><td style="width:36%;padding:9px 12px;border-top:1px solid #E7EADB;color:#6B7158;font-size:13px;vertical-align:top">' + esc_(f[0]) +
+      '</td><td style="padding:9px 12px;border-top:1px solid #E7EADB;color:#1E2410;font-size:14px;line-height:1.5;vertical-align:top">' +
+      esc_(f[1]).replace(/\r?\n/g, '<br>') + '</td></tr>';
+  }).join('');
+  var logo = c.hasLogo
+    ? '<td style="padding-right:14px;vertical-align:middle"><img src="cid:arms" width="48" alt="Coat of arms of the Republic of Uganda" style="display:block;width:48px;height:auto;border:0"></td>'
+    : '';
+  var buttons = '<a href="' + esc_(c.link) + '" style="display:inline-block;background:#4B5320;color:#F4F5EC;text-decoration:none;padding:11px 18px;font-weight:700;font-size:14px;border-radius:0">Open the project journal</a>';
+  if (c.formUrl) {
+    buttons += ' <a href="' + esc_(c.formUrl) + '" style="display:inline-block;background:#FFFFFF;color:#4B5320;text-decoration:none;padding:10px 17px;font-weight:700;font-size:14px;border:1px solid #4B5320;border-radius:0">Add a journal entry</a>';
+  }
+  return '<div style="margin:0;padding:24px 12px;background:#F4F5EC;font-family:Ubuntu,system-ui,sans-serif;color:#1E2410">' +
+    '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:640px;margin:0 auto;border-collapse:collapse;background:#FFFFFF;border:1px solid #DCE0CC">' +
+    '<tr><td style="background:#4B5320;padding:16px 24px"><table role="presentation" cellpadding="0" cellspacing="0"><tr>' + logo +
+    '<td style="vertical-align:middle;font-family:Ubuntu,system-ui,sans-serif"><div style="color:#F4F5EC;font-size:18px;font-weight:700">RCQI Jinja RRH</div>' +
+    '<div style="color:#E3E7D1;font-size:13px">QI Documentation Journal</div></td></tr></table></td></tr>' +
+    '<tr><td style="padding:24px;font-family:Ubuntu,system-ui,sans-serif">' +
+    '<div style="color:#6F823B;font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase">' + esc_(c.headline) + '</div>' +
+    '<div style="color:#1E2410;font-size:20px;font-weight:700;margin:6px 0 2px">' + esc_(c.title) + '</div>' +
+    '<div style="color:#4A5136;font-size:14px">' + esc_(c.facility) + '</div>' +
+    '<p style="color:#1E2410;font-size:14px;line-height:1.55;margin:16px 0">' + esc_(c.intro) + '</p>' +
+    (rows ? '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border-bottom:1px solid #E7EADB;margin:0 0 20px">' + rows + '</table>' : '') +
+    '<div>' + buttons + '</div></td></tr>' +
+    '<tr><td style="padding:14px 24px;background:#F4F5EC;color:#6B7158;font-size:12px;line-height:1.5;font-family:Ubuntu,system-ui,sans-serif">' + esc_(c.footer) + '</td></tr>' +
+    '</table></div>';
+}
+
+function renderEmailText_(c) {
+  var lines = ['RCQI Jinja RRH: QI Documentation Journal', '', c.headline, c.title + ' (' + c.facility + ')', '', c.intro, ''];
+  c.facts.forEach(function (f) { lines.push(f[0] + ': ' + f[1]); });
+  lines.push('', 'Open the project journal: ' + c.link);
+  if (c.formUrl) lines.push('Add a journal entry: ' + c.formUrl);
+  lines.push('', c.footer);
+  return lines.join('\n');
+}
+
+/**
+ * Sends one email per recipient (so no one sees anyone else's address), within the remaining daily quota.
+ * mailer: { quota: function () -> number, send: function (message) }. Returns what was sent and why anything was not.
+ */
+function sendJournalNotification_(msg, mailer, logo) {
+  var result = { sent: [], failed: [], skipped: [], status: '' };
+  if (!msg || !msg.recipients.length) { result.status = 'No recipients'; return result; }
+  var quota = Number(mailer.quota());
+  msg.recipients.forEach(function (to, i) {
+    if (i >= quota) { result.skipped.push(to); return; }
+    var message = { to: to, subject: msg.subject, htmlBody: msg.html, body: msg.text, name: RCQI.mailName };
+    if (logo) message.inlineImages = { arms: logo };
+    try { mailer.send(message); result.sent.push(to); } catch (err) { result.failed.push(to + ' (' + err + ')'); }
+  });
+  result.status = result.skipped.length ? 'Daily email quota reached: ' + result.skipped.length + ' not sent'
+    : (result.failed.length ? result.failed.length + ' failed' : 'Sent');
+  return result;
+}
+
+/** Creates the QI Notification List and QI Notification Log tabs if they do not exist. Safe to run more than once. */
+function setupNotifications() {
+  var ss = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID'));
+  var list = ss.getSheetByName(RCQI.notifyTab);
+  if (!list) {
+    list = ss.insertSheet(RCQI.notifyTab);
+    list.getRange(1, 1, 1, 5).setValues([['Name', 'Email', 'Facility', 'Active', 'Notes']]);
+    var owner = Session.getEffectiveUser().getEmail();
+    if (owner) list.getRange(2, 1, 1, 5).setValues([['RCQI coordinator', owner, 'All facilities', 'Yes', 'Receives every QI Journal notification. Set Active to No to stop.']]);
+    var yesNo = SpreadsheetApp.newDataValidation().requireValueInList(['Yes', 'No'], true).setAllowInvalid(false).build();
+    list.getRange(2, 4, list.getMaxRows() - 1, 1).setDataValidation(yesNo);
+    styleHeader_(list);
+    list.setColumnWidths(1, 5, 200);
+    list.setColumnWidth(5, 360);
+    Logger.log('Created the ' + RCQI.notifyTab + ' tab.');
+  }
+  var log = ss.getSheetByName(RCQI.notifyLogTab);
+  if (!log) {
+    log = ss.insertSheet(RCQI.notifyLogTab);
+    log.getRange(1, 1, 1, 5).setValues([['Sent at', 'Project', 'Notification', 'Recipients', 'Status']]);
+    styleHeader_(log);
+    log.setColumnWidths(1, 5, 220);
+    Logger.log('Created the ' + RCQI.notifyLogTab + ' tab.');
+  }
+}
+
+function logNotification_(ss, msg, result) {
+  var log = ss.getSheetByName(RCQI.notifyLogTab);
+  if (!log) return;
+  log.appendRow([new Date(), msg.label, msg.headline, result.sent.join(', '), result.status +
+    (result.failed.length ? ': ' + result.failed.join('; ') : '') + (result.skipped.length ? ' (' + result.skipped.join(', ') + ')' : '')]);
+}
+
+function mailApp_() {
+  return { quota: function () { return MailApp.getRemainingDailyQuota(); }, send: function (m) { MailApp.sendEmail(m); } };
+}
+
+/** Called by the submit trigger for each QI Journal entry. */
+function notifyJournalEntry_(sheet, rowNumber) {
+  var props = PropertiesService.getScriptProperties();
+  var links = JSON.parse(props.getProperty('FORM_LINKS') || '{}');
+  var ss = sheet.getParent();
+  var list = ss.getSheetByName(RCQI.notifyTab);
+  var logo = fetchLogo_();
+  var msg = journalNotification_(defByKey_('qij'), sheet.getDataRange().getValues(), rowNumber,
+    list ? list.getDataRange().getValues() : [[]],
+    { tz: RCQI.timezone, formUrl: links.qij ? links.qij.shortUrl : '', hasLogo: !!logo });
+  if (!msg) return;
+  var result = sendJournalNotification_(msg, mailApp_(), logo);
+  logNotification_(ss, msg, result);
+  Logger.log(msg.subject + ': ' + result.status + ' (' + result.sent.length + ' sent)');
+}
+
+/**
+ * Run from the editor to see a notification: sends one sample email, built from a fictitious project, to the
+ * script owner only. Nothing is written to the journal.
+ */
+function sendTestNotification() {
+  var owner = Session.getEffectiveUser().getEmail();
+  var def = defByKey_('qij');
+  var titles = def.items.filter(function (it) { return it.type !== 'section'; }).map(function (it) { return it.title; });
+  var header = ['Timestamp'].concat(titles);
+  var row = function (o) { return header.map(function (h) { return o[h] !== undefined ? o[h] : ''; }); };
+  var values = [header,
+    row({ 'Timestamp': '2026-01-05T08:00:00.000Z', 'What would you like to record?': 'Register a new QI project', 'Name of the facility': 'Demo Facility A HC IV',
+      'Short project title': 'Early first antenatal visit', 'Target for the indicator (%)': 45, 'Indicator for the objective': 'First antenatal visits within the first trimester (%)' }),
+    row({ 'Timestamp': '2026-09-02T08:00:00.000Z', 'What would you like to record?': 'Record monthly results', 'Which QI project are these results for?': 'Demo Facility A HC IV: Early first antenatal visit',
+      'Month of measurement': '2026-08-15', 'Numerator for the month': 22, 'Denominator for the month': 53 }),
+    row({ 'Timestamp': '2026-10-02T08:00:00.000Z', 'What would you like to record?': 'Record monthly results', 'Which QI project are these results for?': 'Demo Facility A HC IV: Early first antenatal visit',
+      'Month of measurement': '2026-09-15', 'Numerator for the month': 19, 'Denominator for the month': 43,
+      'Notes on the indicator': 'Latest month: gains sustained.', 'Other observed effects and lessons learnt': 'Staff report better teamwork.' })];
+  var logo = fetchLogo_();
+  var links = JSON.parse(PropertiesService.getScriptProperties().getProperty('FORM_LINKS') || '{}');
+  var msg = journalNotification_(def, values, 4, [['Email'], [owner]], { tz: RCQI.timezone, formUrl: links.qij ? links.qij.shortUrl : '', hasLogo: !!logo });
+  msg.subject = 'Test: ' + msg.subject;
+  msg.recipients = [owner];
+  var result = sendJournalNotification_(msg, mailApp_(), logo);
+  var ss = SpreadsheetApp.openById(PropertiesService.getScriptProperties().getProperty('SPREADSHEET_ID'));
+  logNotification_(ss, msg, { sent: result.sent, failed: result.failed, skipped: result.skipped, status: 'Test: ' + result.status });
+  Logger.log('TEST NOTIFICATION: ' + result.status + ' to ' + result.sent.length + ' recipient(s). Remaining daily quota: ' + MailApp.getRemainingDailyQuota());
 }
 
 /* ------------------------------------------------------------------------ */
@@ -1177,8 +1651,12 @@ function convert_(kind, v, tz) {
   }
 }
 
-/** Turns a response tab (header row plus rows) into clean records and a diagnostic report. */
-function parseValues_(def, values, tz) {
+/**
+ * Turns a response tab (header row plus rows) into clean records and a diagnostic report.
+ * opts.includePrivate keeps free text and email fields: used only for notifications, never by the data service.
+ */
+function parseValues_(def, values, tz, opts) {
+  var includePrivate = !!(opts && opts.includePrivate);
   var map = buildHeaderMap_(def);
   var expected = Object.keys(map);
   var headers = (values && values.length) ? values[0].map(function (h) { return String(h).trim(); }) : [];
@@ -1206,7 +1684,7 @@ function parseValues_(def, values, tz) {
         var raw = row[c.idx];
         rec[c.spec.countAs] = raw ? String(raw).split(/[\n,;]+/).filter(function (x) { return x.trim(); }).length : null;
       }
-      if (!c.spec.exportField) return;
+      if (!c.spec.exportField && !includePrivate) return;
       var val = convert_(c.spec.kind, row[c.idx], tz);
       if (c.spec.kind === 'coded') {
         if (val !== null) rec.items[c.spec.key] = val;

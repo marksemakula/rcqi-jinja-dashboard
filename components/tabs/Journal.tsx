@@ -117,6 +117,7 @@ export default function Journal({ all, filters, forms, focus }: TabProps) {
           {formUrl && <a className="btn" href={formUrl} target="_blank" rel="noopener noreferrer">Add a journal entry</a>}
           {sel && <button type="button" className="btn ghost" onClick={() => window.print()}>Print this journal</button>}
         </div>
+        <p className="muted journal-note">Everyone on a project&apos;s team email list, and the RCQI coordinators, receive an email after every entry for that project. Teams add or remove addresses with the &ldquo;Update the team email list&rdquo; option in the form; addresses are never shown here.</p>
         <div className="kpis">
           <Kpi label="QI projects" value={String(kpi.n)} sub={`${kpi.active} active`} />
           <Kpi label="Changes tested" value={String(kpi.changes)} sub={`${kpi.improved} registered an improvement`} />
@@ -140,7 +141,7 @@ export default function Journal({ all, filters, forms, focus }: TabProps) {
       ) : sel && (
         <article className="journal-sheet" aria-label={`Documentation journal: ${sel.title}`}>
           <header className="journal-head">
-            <Image src="/jrrh-logo.png" alt="Ministry of Health, Jinja Regional Referral Hospital logo" width={64} height={64} className="journal-logo" />
+            <Image src="/uganda-coat-of-arms.png" alt="Coat of arms of the Republic of Uganda" width={424} height={459} className="journal-logo" />
             <div className="journal-titles">
               <p className="journal-kicker">Ministry of Health</p>
               <h2>Documentation Journal for QI activities</h2>

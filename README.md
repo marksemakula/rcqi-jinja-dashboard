@@ -41,18 +41,20 @@ Google Forms (7) --> RCQI Jinja RRH Master Database (Google Sheet, one tab per f
             Vercel: /api/data (server side, holds the token) --> dashboard in the browser
 ```
 
-Free text in the six assessment and reporting forms (descriptions, causes, countermeasures, names, phone numbers and comments) never leaves the Google Sheet. The QI Documentation Journal is the deliberate exception: its narrative fields (objective, indicator definitions, problem, changes tested, comments, notes and observed effects) are published so that each journal can be read online, and the form asks teams not to enter patient names, hospital numbers or other identifying details. Team member names stay in the sheet; only the team size is published.
+Free text in the six assessment and reporting forms (descriptions, causes, countermeasures, names, phone numbers and comments) never leaves the Google Sheet. The QI Documentation Journal is the deliberate exception: its narrative fields (objective, indicator definitions, problem, changes tested, comments, notes and observed effects) are published so that each journal can be read online, and the form asks teams not to enter patient names, hospital numbers or other identifying details. Team member names and email addresses stay in the sheet; only the team size is published.
 
 ## First-time setup
 
 1. Open [script.google.com](https://script.google.com), create a new project named "RCQI Jinja RRH" and paste `apps-script/Code.gs` and `apps-script/appsscript.json` (enable "Show appsscript.json" in Project Settings).
-2. Run `setupRCQI`. Approve the permissions requested by Google. The script creates the "RCQI Jinja RRH" Drive folder, the master sheet, the seven forms (with the JRRH logo), the HSR reference-number trigger and an API token.
+2. Run `setupRCQI`. Approve the permissions requested by Google. The script creates the "RCQI Jinja RRH" Drive folder, the master sheet, the seven forms (with the Uganda coat of arms at the top), the HSR reference-number trigger and an API token. Then run `setupNotifications` to create the QI Notification List and QI Notification Log tabs.
 3. Deploy the project: Deploy, New deployment, Web app, Execute as Me, Who has access Anyone. Copy the web app URL (it ends in `/exec`).
 4. Run `showLinks` and copy the value after `RCQI_API_TOKEN=` from the execution log.
 5. In Vercel, add the environment variables `RCQI_API_URL` (web app URL) and `RCQI_API_TOKEN` (token) for Production, then redeploy.
 6. Run `logDiagnostics` at any time to confirm that every expected column is present in every tab.
 
 To add a new form to an existing installation (as was done for the QI Documentation Journal), paste the updated `Code.gs`, run `addMissingForms`, then publish a new version of the existing deployment (Deploy, Manage deployments, edit, Version: New version). The web app URL does not change, so nothing needs updating on Vercel.
+
+To add new questions to a live form (as was done for the journal's team email list), paste the updated `Code.gs` and run `upgradeForms`. It adds only the missing questions and sections in their proper places, reapplies the branching, puts the coat of arms on every form and creates the notification tabs. Existing questions and responses are never changed, and it stops without changing anything if it cannot recognise most of a form's questions. Then publish a new version of the deployment as above.
 
 Until the first submission arrives the dashboard shows clearly labelled demonstration data. It switches to live data automatically.
 
@@ -62,6 +64,7 @@ Until the first submission arrives the dashboard shows clearly labelled demonstr
 - The QI Committee records follow-up on the HSR Reports tab using the columns Reference No., QI Review Status, QI Action Taken and Date Closed.
 - Do not rename tabs, reorder questions or edit question titles once data collection has started. Item codes such as `LD1.` or `ORG3.` must stay at the start of grid rows.
 - QI teams register each improvement project once in the QI Documentation Journal form, then record every change tested and each month's numerator and denominator against it. The project list in the form refreshes automatically after each registration. The QI Journal page shows each project's journal with its annotated run chart and prints on A4 landscape.
+- QI Journal notifications: teams list their members' email addresses at registration and can add or remove addresses later with the "Update the team email list" option. After every journal entry (a new or updated registration, a change tested, monthly results or a team list update), each person on the project's team list and each active coordinator on the QI Notification List tab (Facility "All facilities" or the project's facility) receives one email with the coat of arms, the entry, the result against the target and a link that opens the project's journal. Every send is recorded on the QI Notification Log tab. A personal Gmail account can send to about 100 recipients a day; anything beyond that is logged as not sent. Run `sendTestNotification` to send yourself a sample.
 - To rotate the API token, run `rotateApiToken` and update `RCQI_API_TOKEN` on Vercel.
 
 ## Scoring rules
