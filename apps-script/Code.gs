@@ -1519,6 +1519,10 @@ function applyNames_(ss, links) {
   return done;
 }
 
+/** Changes when the form definitions change, so upgradeForms knows which forms are already up to date. */
+var UPGRADE_VERSION = '2026-10-27 DHIS2 facility lists and CQI names';
+var UPGRADE_BUDGET_MS = 4 * 60 * 1000;
+
 /** Forms that upgradeForms() may change. Other forms (the HSR) are left exactly as they are. */
 var FORM_UPGRADE_KEYS = ['fives', 'hh', 'ipcBasic', 'ipcMoh', 'hfqap', 'qij'];
 
@@ -1535,13 +1539,16 @@ var ITEM_TYPE_FOR_ = {
  */
 function syncFormItems_(form, def, dryRun, directory) {
   var removed = [], kept = [];
-  var questionCount = form.getItems().filter(function (item) { return item.getType() != FormApp.ItemType.IMAGE; }).length;
+  var before = form.getItems();
+  var beforeMeta = before.map(function (item) { return { item: item, title: item.getTitle(), type: item.getType() }; });
+  var questionCount = beforeMeta.filter(function (m) { return m.type != FormApp.ItemType.IMAGE; }).length;
   // Retired questions are removed only while the form has no responses; otherwise they stay, so nothing is lost.
   if ((def.retired || []).length) {
     var noResponses = form.getResponses().length === 0;
     def.retired.forEach(function (r) {
-      form.getItems().forEach(function (item) {
-        if (item.getTitle() !== r.title || item.getType() != FormApp.ItemType[ITEM_TYPE_FOR_[r.type]]) return;
+      beforeMeta.forEach(function (m) {
+        var item = m.item;
+        if (m.title !== r.title || m.type != FormApp.ItemType[ITEM_TYPE_FOR_[r.type]]) return;
         if (!noResponses) { kept.push(r.title); return; }
         removed.push(r.title);
         if (!dryRun) form.deleteItem(item);
@@ -1549,10 +1556,12 @@ function syncFormItems_(form, def, dryRun, directory) {
     });
   }
   var items = form.getItems();
+  // Read every title and type once: each call to the form service is slow, so never repeat them in a loop.
+  var meta = items.map(function (item) { return { item: item, title: item.getTitle(), type: item.getType() }; });
   var match = function (it) {
     var type = FormApp.ItemType[ITEM_TYPE_FOR_[it.type]];
-    for (var i = 0; i < items.length; i++) {
-      if (items[i].getTitle() === it.title && items[i].getType() == type) return items[i];
+    for (var i = 0; i < meta.length; i++) {
+      if (meta[i].title === it.title && meta[i].type == type) return meta[i].item;
     }
     return null;
   };
@@ -1560,9 +1569,7 @@ function syncFormItems_(form, def, dryRun, directory) {
   var added = [];
   var matched = 0;
   var cursor = 0;
-  items.forEach(function (item) {
-    if (item.getType() == FormApp.ItemType.IMAGE && item.getIndex() === 0) cursor = 1; // keep the coat of arms first
-  });
+  if (meta.length && meta[0].type == FormApp.ItemType.IMAGE) cursor = 1; // keep the coat of arms first
   def.items.forEach(function (it) {
     var existing = match(it);
     if (existing) {
@@ -1595,9 +1602,14 @@ function upgradeForms() {
   var props = PropertiesService.getScriptProperties();
   var links = JSON.parse(props.getProperty('FORM_LINKS') || '{}');
   var ss = SpreadsheetApp.openById(props.getProperty('SPREADSHEET_ID'));
-  var directory = loadFacilityDirectory(ss);
-  // Check every form first, so a problem with one changes none of them.
-  var plans = FORM_DEFS.filter(function (def) { return links[def.key] && FORM_UPGRADE_KEYS.indexOf(def.key) > -1; }).map(function (def) {
+  var started = Date.now();
+  var progress = JSON.parse(props.getProperty('UPGRADE_PROGRESS') || '{}');
+  if (progress.version !== UPGRADE_VERSION) progress = { version: UPGRADE_VERSION, done: [] };
+  var directory = progress.done.length ? facilityDirectory_(ss) : loadFacilityDirectory(ss);
+  // Check every remaining form first, so a problem with one changes none of them.
+  var plans = FORM_DEFS.filter(function (def) {
+    return links[def.key] && FORM_UPGRADE_KEYS.indexOf(def.key) > -1 && progress.done.indexOf(def.key) === -1;
+  }).map(function (def) {
     var form = FormApp.openById(links[def.key].id);
     var plan = syncFormItems_(form, def, true, directory);
     // Safety: if most of the form's questions are not recognised, the matching is wrong; change nothing.
@@ -1606,7 +1618,13 @@ function upgradeForms() {
     }
     return { def: def, form: form };
   });
-  plans.forEach(function (p) {
+  for (var n = 0; n < plans.length; n++) {
+    var p = plans[n];
+    // Google stops a run after six minutes. Stop cleanly before that; the next run carries on with the remaining forms.
+    if (Date.now() - started > UPGRADE_BUDGET_MS) {
+      Logger.log('PAUSED: ' + progress.done.length + ' of ' + FORM_UPGRADE_KEYS.length + ' forms upgraded. Run upgradeForms again to continue.');
+      return;
+    }
     var res = syncFormItems_(p.form, p.def, false, directory);
     Logger.log(p.def.short + ': ' + (res.added.length ? 'added ' + res.added.length + ' (' + res.added.slice(0, 3).join(' | ') + (res.added.length > 3 ? ' ...' : '') + ')' : 'nothing to add') +
       (res.removed.length ? '; removed ' + res.removed.join(' | ') : '') + (res.kept.length ? '; kept (has responses) ' + res.kept.join(' | ') : '') + '; lists refreshed');
@@ -1616,7 +1634,9 @@ function upgradeForms() {
       styleHeader_(tab);
       if (p.def.facilityMapped) ensureFacilityColumns_(tab, ss);
     }
-  });
+    progress.done.push(p.def.key);
+    props.setProperty('UPGRADE_PROGRESS', JSON.stringify(progress));
+  }
   replaceFormLogos();
   setupNotifications();
   applyNames_(ss, links);
