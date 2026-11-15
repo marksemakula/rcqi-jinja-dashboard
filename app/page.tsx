@@ -4,7 +4,7 @@ import WordField from '@/components/landing/WordField';
 import { landingDistricts, landingFacilities } from '@/lib/facilities';
 
 export const metadata: Metadata = {
-  title: 'Continuous Quality Improvement | Jinja Regional Referral Hospital'
+  title: 'Continuous Quality Improvement | MoH - Busoga RCQI'
 };
 
 // Links made before the landing page existed point at the root with a section, such as /#journal/<project> in

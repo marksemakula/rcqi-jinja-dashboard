@@ -185,7 +185,7 @@ export default function Dashboard({ directory = [], busoga = [] }: { directory?:
           <Image src="/uganda-coat-of-arms.png" alt="Coat of arms of the Republic of Uganda" width={424} height={459} priority className="brand-logo" />
           <div>
             <span className="brand-title">CQI</span>
-            <span className="brand-sub">Jinja Regional Referral Hospital</span>
+            <span className="brand-sub">MoH - Busoga RCQI</span>
           </div>
         </Link>
         <nav aria-label="Dashboard sections">
@@ -210,7 +210,7 @@ export default function Dashboard({ directory = [], busoga = [] }: { directory?:
           <Image src="/uganda-coat-of-arms.png" alt="" width={424} height={459} className="top-logo" aria-hidden="true" />
           <div className="title-block">
             <h1>Continuous Quality Improvement</h1>
-            <p>CQI dashboard, Jinja Regional Referral Hospital</p>
+            <p>CQI dashboard, MoH - Busoga RCQI</p>
           </div>
           <div className="top-actions">
             <span className={`mode-pill ${mode}`} title={mode === 'live' ? 'Live data from the CQI Google Sheet' : 'Demonstration data'}>
@@ -311,7 +311,7 @@ export default function Dashboard({ directory = [], busoga = [] }: { directory?:
         </main>
 
         <footer className="footer">
-          <p>CQI, Jinja Regional Referral Hospital. Data collected through Google Forms and held in the CQI master Google Sheet. Free-text fields are never published here.</p>
+          <p>CQI, MoH - Busoga RCQI. Data collected through Google Forms and held in the CQI master Google Sheet. Free-text fields are never published here.</p>
         </footer>
       </div>
       {menuOpen && <button type="button" className="scrim" aria-label="Close navigation" onClick={() => setMenuOpen(false)} />}

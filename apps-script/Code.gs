@@ -1,7 +1,7 @@
 /**
  * CQI Jinja RRH: Google Forms, master Google Sheet and dashboard data service.
  *
- * Continuous Quality Improvement (CQI), Jinja Regional Referral Hospital.
+ * Continuous Quality Improvement (CQI), MoH - Busoga RCQI.
  *
  * How to use
  *   1. Run setupCQI() once. It creates a Drive folder, the master spreadsheet,
@@ -35,7 +35,9 @@ var RCQI = {
   emailLogoUrl: 'https://raw.githubusercontent.com/marksemakula/rcqi-jinja-dashboard/main/public/uganda-coat-of-arms-email.png',
   logoWidth: 130,
   dashboardUrl: 'https://rcqi-jinja-dashboard.vercel.app',
-  mailName: 'CQI Jinja RRH',
+  /** The name that owns the forms, dashboard and emails (Mark, 15 Nov 2026). */
+  brand: 'MoH - Busoga RCQI',
+  mailName: 'MoH - Busoga RCQI',
   notifyTab: 'QI Notification List',
   notifyLogTab: 'QI Notification Log',
   // Busoga facility list pulled from the DHIS2 test instance (hmis-tests.health.go.ug), kept in the public repository.
@@ -127,7 +129,7 @@ var FORM_DEFS = [
     key: 'hsr',
     tab: 'HSR Reports',
     short: 'Patient Safety Report (HSR)',
-    title: 'Patient Safety Report (HSR): Jinja Regional Referral Hospital',
+    title: 'Patient Safety Report (HSR): MoH - Busoga RCQI',
     description: 'Safety is everyone\'s responsibility. Use this form to report any near miss or adverse event that you ' +
       'observed or were involved in. Reports are reviewed by the Quality Improvement Committee to strengthen systems, ' +
       'not to apportion blame. Please do not enter patient names, hospital numbers or the names of colleagues.',
@@ -179,7 +181,7 @@ var FORM_DEFS = [
     key: 'fives',
     tab: '5S Assessments',
     short: '5S Monitoring and Evaluation',
-    title: '5S Monitoring and Evaluation Sheet: Jinja RRH QI Initiative',
+    title: '5S Monitoring and Evaluation Sheet: MoH - Busoga RCQI',
     description: 'Monitoring and evaluation of 5S activities in a department or unit: leadership for 5S-CQI-TQM, Sort, ' +
       'Set, Shine and Standardise. Score each item from 0 (poor) to 3 (good). Sub-totals and percentages are ' +
       'calculated automatically on the dashboard (full mark 54).',
@@ -731,7 +733,7 @@ var FORM_DEFS = [
     key: 'qij',
     tab: 'QI Journal',
     short: 'QI Documentation Journal',
-    title: 'QI Documentation Journal: Jinja RRH and Busoga Region',
+    title: 'QI Documentation Journal: MoH - Busoga RCQI',
     description: 'Online version of the Documentation Journal for QI activities. Register each improvement project once, ' +
       'then record every change the team tests (Part 2) and the indicator numerator and denominator each month (Part 3). ' +
       'The CQI dashboard turns the entries into the journal page and its annotated graph. Text entered here is shown ' +
@@ -1088,7 +1090,7 @@ function writeReadMe_(ss, links) {
   var sh = ss.getSheetByName('Read Me');
   var rows = [
     ['CQI Jinja RRH Master Database', ''],
-    ['Purpose', 'Single source for the Continuous Quality Improvement (CQI) dashboard of Jinja Regional Referral Hospital.'],
+    ['Purpose', 'Single source for the Continuous Quality Improvement (CQI) dashboard of ' + RCQI.brand + '.'],
     ['Important', 'Do not rename tabs, reorder form questions or edit question titles once data collection has started. The dashboard reads columns by their titles and item codes.'],
     ['HSR follow-up', 'The QI Committee updates the columns Reference No., QI Review Status, QI Action Taken and Date Closed on the HSR Reports tab. New reports receive a reference number automatically.'],
     ['Privacy', 'Free text from the HSR and the assessment forms (descriptions, causes, comments), all names, phone numbers and email addresses stay in this sheet and are never sent to the dashboard. QI Journal narratives (objective, problem, changes and notes) are published on the dashboard QI Journal page; team names and email addresses are not.'],
@@ -1519,6 +1521,20 @@ function applyNames_(ss, links) {
   return done;
 }
 
+/**
+ * Applies the current form titles, descriptions and confirmation messages to the live forms and rewrites the Read Me,
+ * without touching any question or response. Run this after changing only names or wording (for example the brand).
+ */
+function applyFormNames() {
+  var props = PropertiesService.getScriptProperties();
+  var links = JSON.parse(props.getProperty('FORM_LINKS') || '{}');
+  var ss = SpreadsheetApp.openById(props.getProperty('SPREADSHEET_ID'));
+  var done = applyNames_(ss, links);
+  writeReadMe_(ss, links);
+  CacheService.getScriptCache().remove('payload');
+  Logger.log('FORM NAMES APPLIED: ' + (done.length ? done.join('; ') : 'nothing to change'));
+}
+
 /** Changes when the form definitions change, so upgradeForms knows which forms are already up to date. */
 var UPGRADE_VERSION = '2026-10-27 DHIS2 facility lists and CQI names';
 var UPGRADE_BUDGET_MS = 4 * 60 * 1000;
@@ -1852,7 +1868,7 @@ function renderEmailHtml_(c) {
   return '<div style="margin:0;padding:24px 12px;background:#F4F5EC;font-family:Ubuntu,system-ui,sans-serif;color:#1E2410">' +
     '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:640px;margin:0 auto;border-collapse:collapse;background:#FFFFFF;border:1px solid #DCE0CC">' +
     '<tr><td style="background:#4B5320;padding:16px 24px"><table role="presentation" cellpadding="0" cellspacing="0"><tr>' + logo +
-    '<td style="vertical-align:middle;font-family:Ubuntu,system-ui,sans-serif"><div style="color:#F4F5EC;font-size:18px;font-weight:700">CQI Jinja RRH</div>' +
+    '<td style="vertical-align:middle;font-family:Ubuntu,system-ui,sans-serif"><div style="color:#F4F5EC;font-size:18px;font-weight:700">' + RCQI.brand + '</div>' +
     '<div style="color:#E3E7D1;font-size:13px">QI Documentation Journal</div></td></tr></table></td></tr>' +
     '<tr><td style="padding:24px;font-family:Ubuntu,system-ui,sans-serif">' +
     '<div style="color:#6F823B;font-size:12px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase">' + esc_(c.headline) + '</div>' +
@@ -1866,7 +1882,7 @@ function renderEmailHtml_(c) {
 }
 
 function renderEmailText_(c) {
-  var lines = ['CQI Jinja RRH: QI Documentation Journal', '', c.headline, c.title + ' (' + c.facility + ')', '', c.intro, ''];
+  var lines = [RCQI.brand + ': QI Documentation Journal', '', c.headline, c.title + ' (' + c.facility + ')', '', c.intro, ''];
   c.facts.forEach(function (f) { lines.push(f[0] + ': ' + f[1]); });
   lines.push('', 'Open the project journal: ' + c.link);
   if (c.formUrl) lines.push('Add a journal entry: ' + c.formUrl);

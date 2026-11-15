@@ -1,6 +1,6 @@
-# CQI Dashboard: Jinja Regional Referral Hospital
+# CQI Dashboard: MoH - Busoga RCQI
 
-Interactive dashboard for Continuous Quality Improvement (CQI) at Jinja Regional Referral Hospital (JRRH), Busoga Region, Uganda. Data is collected through seven Google Forms that write to one master Google Sheet. A Google Apps Script data service publishes de-identified records to this Next.js dashboard, which is hosted on Vercel and deployed automatically from GitHub.
+Interactive dashboard for Continuous Quality Improvement (CQI) for MoH - Busoga RCQI, Busoga Region, Uganda. Data is collected through seven Google Forms that write to one master Google Sheet. A Google Apps Script data service publishes de-identified records to this Next.js dashboard, which is hosted on Vercel and deployed automatically from GitHub.
 
 ## Live links
 

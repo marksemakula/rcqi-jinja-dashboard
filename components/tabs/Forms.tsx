@@ -112,7 +112,7 @@ export default function Forms({ all, forms, mode, generatedAt }: TabProps) {
       </div>
       <FacilityReview all={all} />
       <section className="card span-3 method" aria-label="How the scores are calculated">
-        <header className="card-head"><div><h3>How the scores are calculated</h3><p className="card-sub">Scoring follows the source tools held by the CQI team at Jinja RRH.</p></div></header>
+        <header className="card-head"><div><h3>How the scores are calculated</h3><p className="card-sub">Scoring follows the source tools held by the MoH - Busoga RCQI team.</p></div></header>
         <dl className="method-list">
           {METHODS.map(([t, d]) => <div key={t}><dt>{t}</dt><dd>{d}</dd></div>)}
         </dl>
