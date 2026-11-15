@@ -438,3 +438,11 @@ nav { display: flex; flex-direction: column; gap: 2px; }
   .landing-actions .btn, .landing-actions .btn.ghost { flex: 1 1 100%; }
   .landing-ministry { font-size: 15px; letter-spacing: 0.1em; }
 }
+
+/* Period controls and facility markers ------------------------------------------- */
+.filters .select.narrow { min-width: 118px; flex: 0 1 150px; }
+.filters .period-select { min-width: 180px; }
+.search-select .combo-tag { padding: 0 5px; border: 1px solid var(--ag-200); background: var(--ag-50); font-size: 11px; font-weight: 500; color: var(--ag-700); border-radius: 0; }
+@media (max-width: 600px) { .filters .select.narrow { flex: 1 1 calc(50% - 6px); min-width: 0; } }
+.combo-list { overflow-x: hidden; }
+.combo-list.right { left: auto; right: 0; }

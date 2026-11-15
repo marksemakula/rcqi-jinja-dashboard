@@ -91,6 +91,17 @@ export interface HfqapRec extends BaseRec {
   s_m6?: number | null; s_m7?: number | null; s_m8?: number | null; s_m9?: number | null; s_m10?: number | null;
 }
 
+/** A health facility from the DHIS2 directory (data/dhis2-busoga-facilities.json), as the pages receive it. */
+export interface DirectoryFacility {
+  id: string;
+  name: string;
+  district: string;
+  level: string | null;
+  ownership: string | null;
+  subcounty: string | null;
+  functional: boolean;
+}
+
 /** One entry in the QI Documentation Journal form: a project registration, a change tested or a month of results. */
 export interface QijRec extends BaseRec {
   entryType?: string | null;

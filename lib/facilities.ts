@@ -2,7 +2,7 @@
  * The DHIS2 facility directory for the landing page, read on the server so the browser only receives the fields it shows.
  */
 import directory from '@/data/dhis2-busoga-facilities.json';
-import type { LandingFacility } from '@/components/landing/LandingPanel';
+import type { DirectoryFacility } from '@/lib/types';
 
 interface DirectoryEntry {
   uid: string; name: string; district: string; subcounty?: string | null; level?: string | null; ownership?: string | null; functional?: boolean;
@@ -14,7 +14,7 @@ const OWNERSHIP: Record<string, string> = {
   'Private for Profit (PFP)': 'Private for profit'
 };
 
-export function landingFacilities(): LandingFacility[] {
+export function landingFacilities(): DirectoryFacility[] {
   return (directory.facilities as DirectoryEntry[])
     .map((f) => ({
       id: f.uid,

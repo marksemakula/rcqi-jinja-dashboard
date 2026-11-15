@@ -15,9 +15,10 @@ import { TABS, type TabId, type TabProps } from './tabs/shared';
 import { Select } from './ui';
 import FacilitySearch from './FacilitySearch';
 import { buildDemo } from '@/lib/demo';
-import { ALL, DEFAULT_FILTERS, datasetSize, filterDataset, filtersFromSearch, normaliseDataset, optionsFrom, PRESETS, searchFromFilters, type Filters, type Preset } from '@/lib/filters';
+import { ALL, DEFAULT_FILTERS, datasetSize, filterDataset, filtersFromSearch, currentFyStart, fyLabel, MONTH_NAMES, normaliseDataset, optionsFrom, periodDefaults, periodMonths, periodYears, PRESETS, searchFromFilters, type Filters, type Preset } from '@/lib/filters';
 import { buildJournal, filterProjects } from '@/lib/journal';
-import type { Mode, Payload } from '@/lib/types';
+import type { DirectoryFacility, Mode, Payload } from '@/lib/types';
+import type { FacilityOption } from './FacilitySearch';
 
 const ICONS: Record<TabId, string> = {
   overview: 'M3 13h6V3H3zm0 8h6v-6H3zm8 0h6V11h-6zm0-18v6h6V3z',
@@ -32,7 +33,11 @@ const ICONS: Record<TabId, string> = {
 
 const REFRESH_MS = 5 * 60 * 1000;
 
-export default function Dashboard() {
+/**
+ * directory: every DHIS2 facility in Busoga; busoga: its districts. Both come from the server page, so the place filters
+ * list every district and facility, not only those with entries.
+ */
+export default function Dashboard({ directory = [], busoga = [] }: { directory?: DirectoryFacility[]; busoga?: string[] }) {
   const [payload, setPayload] = useState<Payload | null>(null);
   const [loading, setLoading] = useState(true);
   const [failed, setFailed] = useState(false);
@@ -79,13 +84,12 @@ export default function Dashboard() {
     return () => window.removeEventListener('hashchange', fromHash);
   }, []);
 
-  // The landing page (and any bookmark) passes the district and facility in the address: /dashboard?district=..&facility=..
+  // The landing page (and any bookmark) passes the filters in the address: /dashboard?period=..&district=..&facility=..
   const addressRead = useRef(false);
   useEffect(() => {
-    const chosen = filtersFromSearch(window.location.search);
-    if (chosen.district !== ALL || chosen.facility !== ALL) setFilters((f) => ({ ...f, ...chosen }));
+    if (window.location.search) setFilters((f) => ({ ...f, ...filtersFromSearch(window.location.search) }));
   }, []);
-  // The address follows the district and facility filters, so a filtered view can be bookmarked or shared.
+  // The address follows the period, district and facility filters, so a filtered view can be bookmarked or shared.
   useEffect(() => {
     if (!addressRead.current) { addressRead.current = true; return; }
     const search = searchFromFilters(filters);
@@ -102,16 +106,43 @@ export default function Dashboard() {
   const filtered = useMemo(() => filterDataset(dataset, filters), [dataset, filters]);
   const opts = useMemo(() => optionsFrom(dataset), [dataset]);
   // A district or facility chosen on the landing page may have no entries yet; it still appears in the filters.
-  const districtOptions = useMemo(() => (filters.district === ALL || opts.districts.includes(filters.district)
-    ? opts.districts : [...opts.districts, filters.district].sort((a, b) => a.localeCompare(b))), [opts, filters.district]);
-  // The facility search lists the facilities in the chosen district (all districts when none is chosen).
+  // Every Busoga district from DHIS2, any other district found in the entries, and a district chosen in the address.
+  const districtOptions = useMemo(() => {
+    const set = new Set<string>([...busoga, ...opts.districts]);
+    if (filters.district !== ALL) set.add(filters.district);
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [busoga, opts, filters.district]);
+  // The districts a facility belongs to (names can repeat across districts).
+  const districtsOf = useCallback((name: string) => {
+    const out = directory.filter((f) => f.name === name).map((f) => f.district);
+    if (opts.facilityDistricts[name]) out.push(opts.facilityDistricts[name]);
+    return out;
+  }, [directory, opts]);
+  // The facility search lists every DHIS2 facility in the chosen district (all districts when none is chosen), marks those
+  // with entries, and adds entered facilities that are not in DHIS2 so their entries can still be filtered.
   const facilityOptions = useMemo(() => {
-    const list = opts.facilities
-      .filter((f) => filters.district === ALL || opts.facilityDistricts[f] === filters.district)
-      .map((f) => ({ name: f, district: opts.facilityDistricts[f] || null }));
-    if (filters.facility !== ALL && !list.some((f) => f.name === filters.facility)) list.push({ name: filters.facility, district: filters.district === ALL ? null : filters.district });
+    const inScope = (d: string | null) => filters.district === ALL || d === filters.district;
+    const withEntries = new Set(opts.facilities);
+    const list: FacilityOption[] = directory.filter((f) => inScope(f.district))
+      .map((f) => ({ id: f.id, name: f.name, district: f.district, level: f.level, tag: withEntries.has(f.name) ? 'Has entries' : undefined }));
+    const known = new Set(directory.map((f) => f.name));
+    for (const name of opts.facilities) {
+      const d = opts.facilityDistricts[name] || null;
+      if (!known.has(name) && inScope(d)) list.push({ id: `entered:${name}`, name, district: d, level: 'Not in DHIS2', tag: 'Has entries' });
+    }
+    if (filters.facility !== ALL && !list.some((f) => f.name === filters.facility)) list.push({ id: `chosen:${filters.facility}`, name: filters.facility, district: filters.district === ALL ? null : filters.district });
     return list;
-  }, [opts, filters.district, filters.facility]);
+  }, [directory, opts, filters.district, filters.facility]);
+  const selectedFacilityId = useMemo(() => facilityOptions.find((o) => o.name === filters.facility && (filters.district === ALL || o.district === filters.district))?.id, [facilityOptions, filters.facility, filters.district]);
+  // Years and months offered by the period controls.
+  const years = useMemo(() => periodYears([...dataset.hsr, ...dataset.fives, ...dataset.hh, ...dataset.ipcBasic, ...dataset.ipcMoh, ...dataset.hfqap, ...dataset.qij].map((r) => r.date || r.ts)), [dataset]);
+  const months = useMemo(() => periodMonths(years), [years]);
+  const fyStarts = useMemo(() => {
+    const out: number[] = [];
+    for (let y = currentFyStart(); y >= years[years.length - 1] - 1; y--) out.push(y);
+    return out;
+  }, [years]);
+  const monthName = (key: string) => `${MONTH_NAMES[Number(key.slice(5, 7)) - 1]} ${key.slice(0, 4)}`;
   // Entries for the chosen facility in the selected period (journal projects count at project level).
   const facilityEntries = useMemo(() => {
     if (filters.facility === ALL) return null;
@@ -130,6 +161,7 @@ export default function Dashboard() {
 
   const props: TabProps = { data: filtered, all: dataset, filters, forms: payload?.forms || {}, mode, go, focus, generatedAt: payload?.generatedAt || null };
   const setF = (patch: Partial<Filters>) => setFilters((f) => ({ ...f, ...patch }));
+  const setPeriod = (p: Preset) => setF({ preset: p, ...(p === filters.preset ? {} : periodDefaults(p)) });
   const changed = filters.preset !== DEFAULT_FILTERS.preset || filters.district !== ALL || filters.facility !== ALL || filters.department !== ALL;
 
   let banner: { tone: 'info' | 'warn'; text: string; action?: { label: string; run: () => void } } | null = null;
@@ -202,15 +234,62 @@ export default function Dashboard() {
 
         {tab !== 'forms' && (
           <div className="filters" role="search" aria-label="Filters">
-            <label className="select">
+            <label className="select period-select">
               <span>Period</span>
-              <select value={filters.preset} onChange={(e) => setF({ preset: e.target.value as Preset })}>
-                {PRESETS.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
+              <select value={filters.preset} onChange={(e) => setPeriod(e.target.value as Preset)}>
+                <optgroup label="Quick ranges">
+                  {PRESETS.filter((p) => p.group === 'quick').map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
+                </optgroup>
+                <optgroup label="Choose a period">
+                  {PRESETS.filter((p) => p.group === 'choose').map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
+                </optgroup>
               </select>
             </label>
+            {filters.preset === 'calendar' && (
+              <>
+                <label className="select narrow period-year">
+                  <span>Year</span>
+                  <select value={filters.year ?? years[0]} onChange={(e) => setF({ year: Number(e.target.value) })}>
+                    {years.map((y) => <option key={y} value={y}>{y}</option>)}
+                  </select>
+                </label>
+                <label className="select narrow period-month">
+                  <span>Month</span>
+                  <select value={filters.month} onChange={(e) => setF({ month: Number(e.target.value) })}>
+                    <option value={0}>All months</option>
+                    {MONTH_NAMES.map((m, i) => <option key={m} value={i + 1}>{m}</option>)}
+                  </select>
+                </label>
+              </>
+            )}
+            {filters.preset === 'fyear' && (
+              <label className="select narrow period-fy">
+                <span>Financial year</span>
+                <select value={filters.fyStart ?? ''} onChange={(e) => setF({ fyStart: Number(e.target.value) })}>
+                  {fyStarts.map((y) => <option key={y} value={y}>{fyLabel(y)}</option>)}
+                </select>
+              </label>
+            )}
+            {filters.preset === 'range' && (
+              <>
+                <label className="select narrow period-from">
+                  <span>From</span>
+                  <select value={filters.from ?? ''} onChange={(e) => setF({ from: e.target.value })}>
+                    {months.map((k) => <option key={k} value={k}>{monthName(k)}</option>)}
+                  </select>
+                </label>
+                <label className="select narrow period-to">
+                  <span>To</span>
+                  <select value={filters.to ?? ''} onChange={(e) => setF({ to: e.target.value })}>
+                    {months.map((k) => <option key={k} value={k}>{monthName(k)}</option>)}
+                  </select>
+                </label>
+              </>
+            )}
             <Select label="District" value={filters.district} options={districtOptions} allLabel="All districts"
-              onChange={(v) => setF({ district: v, facility: v === ALL || opts.facilityDistricts[filters.facility] === v ? filters.facility : ALL })} />
-            <FacilitySearch value={filters.facility} options={facilityOptions} onChange={(v) => setF({ facility: v })} allLabel="All facilities" />
+              onChange={(v) => setF({ district: v, facility: filters.facility === ALL || v === ALL || districtsOf(filters.facility).includes(v) ? filters.facility : ALL })} />
+            <FacilitySearch value={filters.facility} options={facilityOptions} selectedId={selectedFacilityId} allLabel="All facilities"
+              onChange={(v, option) => setF(option ? { facility: v, district: option.district || filters.district } : { facility: ALL })} />
             <Select label="Department or ward" value={filters.department} options={opts.departments} onChange={(v) => setF({ department: v })} allLabel="All departments" />
             {changed && <button type="button" className="btn ghost small reset" onClick={() => setFilters(DEFAULT_FILTERS)}>Reset filters</button>}
           </div>

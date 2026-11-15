@@ -11,6 +11,8 @@ export interface FacilityOption {
   id?: string;
   /** The DHIS2 level, such as HC III or General Hospital, shown beside the name when given. */
   level?: string | null;
+  /** A short marker shown before the level, such as "Has entries". */
+  tag?: string;
 }
 
 /**
@@ -27,6 +29,8 @@ export default function FacilitySearch({ value, options, onChange, allLabel = 'A
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [active, setActive] = useState(0);
+  // The list opens towards the left when there is not enough room to its right, so it never pushes the page sideways.
+  const [alignRight, setAlignRight] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const listRef = useRef<HTMLUListElement>(null);
 
@@ -45,6 +49,11 @@ export default function FacilitySearch({ value, options, onChange, allLabel = 'A
   }, [options, query]);
 
   useEffect(() => { setActive(0); }, [query, open]);
+  useEffect(() => {
+    if (!open || !inputRef.current) return;
+    const r = inputRef.current.getBoundingClientRect();
+    setAlignRight(r.left + Math.min(460, window.innerWidth - 32) > window.innerWidth - 16);
+  }, [open]);
   useEffect(() => {
     if (!open || !listRef.current) return;
     const el = listRef.current.querySelector<HTMLElement>(`[data-index="${active}"]`);
@@ -89,7 +98,7 @@ export default function FacilitySearch({ value, options, onChange, allLabel = 'A
           spellCheck={false}
         />
         {open && (
-          <ul id={listId} role="listbox" ref={listRef} className="combo-list" aria-label={`${label} options`}>
+          <ul id={listId} role="listbox" ref={listRef} className={`combo-list${alignRight ? ' right' : ''}`} aria-label={`${label} options`}>
             {matches.length === 0 && <li className="combo-empty" role="presentation">No facility matches &ldquo;{query}&rdquo;</li>}
             {matches.map((o, i) => {
               const chosen = selectedId && o.id ? o.id === selectedId : o.name === value;
@@ -105,8 +114,9 @@ export default function FacilitySearch({ value, options, onChange, allLabel = 'A
                 onMouseEnter={() => setActive(i)}
               >
                 <span className="combo-name">{o.name === ALL ? allLabel : o.name}</span>
-                {(o.level || o.district) && (
+                {(o.tag || o.level || o.district) && (
                   <span className="combo-meta">
+                    {o.tag && <span className="combo-tag">{o.tag}</span>}
                     {o.level && <span className="combo-level">{o.level}</span>}
                     {o.district && <span className="combo-district">{o.district}</span>}
                   </span>

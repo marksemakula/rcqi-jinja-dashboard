@@ -5,16 +5,9 @@ import Link from 'next/link';
 import { useMemo, useState } from 'react';
 import FacilitySearch, { type FacilityOption } from '../FacilitySearch';
 import { ALL, searchFromFilters } from '@/lib/filters';
+import type { DirectoryFacility } from '@/lib/types';
 
-export interface LandingFacility {
-  id: string;
-  name: string;
-  district: string;
-  level: string | null;
-  ownership: string | null;
-  subcounty: string | null;
-  functional: boolean;
-}
+export type LandingFacility = DirectoryFacility;
 
 const districtLabel = (d: string) => (d === 'Jinja City' ? d : `${d} District`);
 const plural = (n: number) => `${n} health ${n === 1 ? 'facility' : 'facilities'}`;
