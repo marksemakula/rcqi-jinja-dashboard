@@ -107,3 +107,23 @@ export function normaliseDataset(data?: Partial<Dataset>): Dataset {
 
 export const datasetSize = (d: Dataset) =>
   d.hsr.length + d.fives.length + d.hh.length + d.ipcBasic.length + d.ipcMoh.length + d.hfqap.length + d.qij.length;
+
+const fromAddress = (v: string | null) => {
+  const t = (v || '').trim();
+  return t && t.length <= 160 ? t : ALL;
+};
+
+/** The district and facility given in a dashboard address, such as ?district=Kamuli&facility=Namwendwa+Health+Centre+IV. */
+export function filtersFromSearch(search: string): Pick<Filters, 'district' | 'facility'> {
+  const q = new URLSearchParams(search);
+  return { district: fromAddress(q.get('district')), facility: fromAddress(q.get('facility')) };
+}
+
+/** The query string for a district and facility ('' for the whole region). */
+export function searchFromFilters(f: Pick<Filters, 'district' | 'facility'>): string {
+  const q = new URLSearchParams();
+  if (f.district !== ALL) q.set('district', f.district);
+  if (f.facility !== ALL) q.set('facility', f.facility);
+  const s = q.toString();
+  return s ? `?${s}` : '';
+}

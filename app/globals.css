@@ -55,7 +55,7 @@ a { color: var(--ag-700); }
   background: linear-gradient(180deg, var(--ag-800) 0%, var(--ag-900) 100%);
   color: var(--on-dark); display: flex; flex-direction: column; padding: 22px 14px;
 }
-.brand { display: flex; align-items: center; gap: 12px; padding: 4px 8px 22px; border-bottom: 1px solid rgba(244, 245, 236, 0.12); margin-bottom: 14px; }
+.brand { display: flex; align-items: center; gap: 12px; padding: 4px 8px 22px; text-decoration: none; color: inherit; border-bottom: 1px solid rgba(244, 245, 236, 0.12); margin-bottom: 14px; }
 .brand-mark { color: var(--ag-600); flex: none; }
 .brand-title { display: block; font-family: var(--font); font-weight: 700; font-size: 22px; letter-spacing: 0.12em; color: var(--on-dark); }
 .brand-sub { display: block; font-size: 11.5px; color: var(--ag-200); line-height: 1.3; }
@@ -354,3 +354,82 @@ nav { display: flex; flex-direction: column; gap: 2px; }
 .search-select .combo-name { font-size: 13.5px; font-weight: 500; color: var(--ink); }
 .search-select .combo-district { font-size: 12px; font-weight: 400; color: var(--ink-muted); }
 .facility-review .data-table th { padding: 9px 10px; font-size: 12px; font-weight: 700; color: var(--ag-800); white-space: nowrap; }
+
+/* Landing page --------------------------------------------------------------- */
+.landing { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); min-height: 100vh; min-height: 100dvh; background: var(--surface); }
+.landing-words {
+  position: relative; overflow: hidden; min-height: 100%;
+  background: radial-gradient(130% 95% at 62% 42%, var(--ag-700) 0%, var(--ag-800) 48%, var(--ag-900) 100%);
+}
+.word-field {
+  position: absolute; left: 50%; top: 50%; width: 2000px;
+  display: flex; flex-direction: column; gap: 0;
+  transform: translate(-50%, -50%) rotate(-38deg);
+  pointer-events: none; user-select: none;
+}
+/* A soft vignette, so the words recede towards the edges of the half. */
+.landing-words::after {
+  content: ''; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(115% 85% at 58% 44%, rgba(40, 49, 15, 0) 38%, rgba(40, 49, 15, 0.55) 78%, rgba(40, 49, 15, 0.85) 100%);
+}
+.wf-line { display: flex; align-items: baseline; gap: 0 12px; white-space: nowrap; line-height: 1.02; }
+.word-field .wf { font-family: var(--font); color: var(--on-dark); }
+.word-field .s1 { font-size: 12px; }
+.word-field .s2 { font-size: 14px; }
+.word-field .s3 { font-size: 16px; }
+.word-field .s4 { font-size: 19px; }
+.word-field .s5 { font-size: 23px; }
+.word-field .s6 { font-size: 28px; }
+.word-field .s7 { font-size: 36px; }
+.word-field .s8 { font-size: 46px; }
+.word-field .w300 { font-weight: 300; }
+.word-field .w400 { font-weight: 400; }
+.word-field .w500 { font-weight: 500; }
+.word-field .w700 { font-weight: 700; }
+.word-field .t1 { opacity: 0.13; }
+.word-field .t2 { opacity: 0.22; }
+.word-field .t3 { opacity: 0.36; }
+.word-field .t4 { opacity: 0.6; }
+.word-field .t5 { color: var(--khaki); opacity: 0.9; }
+.word-field .up { text-transform: uppercase; letter-spacing: 0.03em; }
+
+.landing-panel { display: flex; align-items: center; justify-content: center; padding: 48px 40px; border-left: 4px solid var(--khaki); background: var(--surface); }
+.landing-inner { width: 100%; max-width: 470px; }
+.landing-arms { display: block; width: auto; height: 132px; margin: 0 auto 20px; border-radius: 0; background: none; }
+.landing-eyebrow { margin: 0 0 6px; text-align: center; font-size: 12px; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; color: var(--ink-muted); }
+.landing-panel h1 { margin: 0 0 12px; text-align: center; font-size: 34px; line-height: 1.15; font-weight: 700; color: var(--ag-800); }
+.landing-lead { margin: 0 0 26px; text-align: center; font-size: 15px; color: var(--ink-soft); }
+.landing-filter { padding: 20px 20px 22px; background: var(--card); border: 1px solid var(--border); border-top: 3px solid var(--ag-600); border-radius: 0; box-shadow: var(--shadow); }
+.landing-filter h2 { margin: 0 0 14px; font-size: 15px; font-weight: 700; color: var(--ag-800); }
+.landing-fields { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+.landing-fields .select, .landing-fields .search-select { max-width: none; min-width: 0; }
+.landing-fields .select select, .landing-fields .combo input { height: 42px; line-height: 22px; }
+.landing-search .combo-list { width: 100%; max-width: none; max-height: 300px; }
+.combo-meta { display: inline-flex; gap: 8px; white-space: nowrap; }
+.search-select .combo-level { font-size: 12px; font-weight: 500; color: var(--khaki-dark); }
+.landing-count { margin: 8px 0 14px; font-size: 12.5px; color: var(--ink-muted); }
+.landing-choice { margin: 0 0 16px; padding: 10px 12px; min-height: 68px; background: var(--ag-50); border-left: 3px solid var(--khaki); }
+.landing-scope { margin: 0; font-size: 14px; color: var(--ink); }
+.landing-details { margin: 3px 0 0; font-size: 12.5px; color: var(--ink-muted); }
+.landing-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.landing-open { flex: 1 1 200px; padding: 11px 18px; font-size: 14.5px; }
+.landing-actions .btn.ghost { flex: 0 1 auto; padding: 11px 16px; }
+.landing-source { margin: 18px 0 0; text-align: center; font-size: 12px; color: var(--ink-muted); }
+.no-entries strong { font-weight: 700; }
+
+@media (min-width: 1800px) { .word-field { transform: translate(-50%, -50%) rotate(-38deg) scale(1.3); } }
+@media (min-width: 2500px) { .word-field { transform: translate(-50%, -50%) rotate(-38deg) scale(1.7); } }
+@media (max-width: 900px) {
+  .landing { grid-template-columns: minmax(0, 1fr); }
+  .landing-words { height: 34vh; min-height: 210px; }
+  .word-field { transform: translate(-50%, -50%) rotate(-38deg) scale(0.82); }
+  .landing-panel { padding: 28px 16px 36px; border-left: 0; border-top: 4px solid var(--khaki); }
+  .landing-arms { height: 96px; margin-bottom: 14px; }
+  .landing-panel h1 { font-size: 27px; }
+  .landing-lead { font-size: 14px; margin-bottom: 20px; }
+  .landing-filter { padding: 16px; }
+}
+@media (max-width: 480px) {
+  .landing-actions .btn, .landing-actions .btn.ghost { flex: 1 1 100%; }
+  .landing-eyebrow { font-size: 11px; letter-spacing: 0.08em; }
+}

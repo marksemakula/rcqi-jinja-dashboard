@@ -4,7 +4,8 @@ Interactive dashboard for Continuous Quality Improvement (CQI) at Jinja Regional
 
 ## Live links
 
-- Dashboard: https://rcqi-jinja-dashboard.vercel.app
+- Home page and facility search: https://rcqi-jinja-dashboard.vercel.app
+- Dashboard: https://rcqi-jinja-dashboard.vercel.app/dashboard
 - Patient Safety Report (HSR): https://forms.gle/arH8fvVAzBxG61iS8
 - 5S Monitoring and Evaluation: https://forms.gle/TAKi9NU6GHDZQFBPA
 - Hand Hygiene Observation: https://forms.gle/hbudJaqDuijoZ9ob9
@@ -26,6 +27,10 @@ The master sheet, the forms and the Apps Script project live in the "CQI Jinja R
 | 5S-CQI-TQM | 5S Monitoring and Evaluation Sheet | 5S Monitoring and Evaluation |
 | Quality of care | MoH HFQAP Facility Assessment Tool | HFQAP Facility Assessment |
 | Quality improvement projects | Documentation Journal for QI activities | QI Documentation Journal |
+
+## Home page
+
+The address root opens a landing page. The left half is a field of Continuous Quality Improvement terms (the vocabulary is in `lib/cqi-words.ts`, laid out by a seeded generator so it is identical on every load). The right half carries the Uganda coat of arms, the programme title and a facility search over every DHIS2 facility in Busoga (`data/dhis2-busoga-facilities.json`): choose a district, then type part of a facility name. Open the dashboard goes to `/dashboard?district=<district>&facility=<facility>`; the dashboard keeps these two filters in its address, so a facility's view can be bookmarked. A facility with no entries yet is still applied and labelled as such. Older links to the root with a section, such as `/#journal/<project>` in notification emails or `/#forms`, are forwarded to the same section of `/dashboard`.
 
 Every chart responds to the period, district, facility and department filters. Charts support tooltips, cross-filtering (select a bar or cell), drill-down panels, chart or table views, CSV download and an expanded view.
 

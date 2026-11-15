@@ -1,7 +1,8 @@
 'use client';
 
 import Image from 'next/image';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Overview from './tabs/Overview';
 import Safety from './tabs/Safety';
 import HandHygiene from './tabs/HandHygiene';
@@ -14,7 +15,8 @@ import { TABS, type TabId, type TabProps } from './tabs/shared';
 import { Select } from './ui';
 import FacilitySearch from './FacilitySearch';
 import { buildDemo } from '@/lib/demo';
-import { ALL, DEFAULT_FILTERS, datasetSize, filterDataset, normaliseDataset, optionsFrom, PRESETS, type Filters, type Preset } from '@/lib/filters';
+import { ALL, DEFAULT_FILTERS, datasetSize, filterDataset, filtersFromSearch, normaliseDataset, optionsFrom, PRESETS, searchFromFilters, type Filters, type Preset } from '@/lib/filters';
+import { buildJournal, filterProjects } from '@/lib/journal';
 import type { Mode, Payload } from '@/lib/types';
 
 const ICONS: Record<TabId, string> = {
@@ -77,6 +79,20 @@ export default function Dashboard() {
     return () => window.removeEventListener('hashchange', fromHash);
   }, []);
 
+  // The landing page (and any bookmark) passes the district and facility in the address: /dashboard?district=..&facility=..
+  const addressRead = useRef(false);
+  useEffect(() => {
+    const chosen = filtersFromSearch(window.location.search);
+    if (chosen.district !== ALL || chosen.facility !== ALL) setFilters((f) => ({ ...f, ...chosen }));
+  }, []);
+  // The address follows the district and facility filters, so a filtered view can be bookmarked or shared.
+  useEffect(() => {
+    if (!addressRead.current) { addressRead.current = true; return; }
+    const search = searchFromFilters(filters);
+    if (search === window.location.search) return;
+    history.replaceState(null, '', `${window.location.pathname}${search}${window.location.hash}`);
+  }, [filters]);
+
   const live = useMemo(() => normaliseDataset(payload?.data), [payload]);
   const demo = useMemo(() => buildDemo(), []);
   const liveCount = datasetSize(live);
@@ -85,10 +101,22 @@ export default function Dashboard() {
   const dataset = mode === 'live' ? live : demo;
   const filtered = useMemo(() => filterDataset(dataset, filters), [dataset, filters]);
   const opts = useMemo(() => optionsFrom(dataset), [dataset]);
+  // A district or facility chosen on the landing page may have no entries yet; it still appears in the filters.
+  const districtOptions = useMemo(() => (filters.district === ALL || opts.districts.includes(filters.district)
+    ? opts.districts : [...opts.districts, filters.district].sort((a, b) => a.localeCompare(b))), [opts, filters.district]);
   // The facility search lists the facilities in the chosen district (all districts when none is chosen).
-  const facilityOptions = useMemo(() => opts.facilities
-    .filter((f) => filters.district === ALL || opts.facilityDistricts[f] === filters.district)
-    .map((f) => ({ name: f, district: opts.facilityDistricts[f] || null })), [opts, filters.district]);
+  const facilityOptions = useMemo(() => {
+    const list = opts.facilities
+      .filter((f) => filters.district === ALL || opts.facilityDistricts[f] === filters.district)
+      .map((f) => ({ name: f, district: opts.facilityDistricts[f] || null }));
+    if (filters.facility !== ALL && !list.some((f) => f.name === filters.facility)) list.push({ name: filters.facility, district: filters.district === ALL ? null : filters.district });
+    return list;
+  }, [opts, filters.district, filters.facility]);
+  // Entries for the chosen facility in the selected period (journal projects count at project level).
+  const facilityEntries = useMemo(() => {
+    if (filters.facility === ALL) return null;
+    return datasetSize({ ...filtered, qij: [] }) + filterProjects(buildJournal(dataset.qij), filters).length;
+  }, [filtered, dataset, filters]);
 
   const go = useCallback((t: TabId, f?: string) => {
     setTab(t);
@@ -121,13 +149,13 @@ export default function Dashboard() {
   return (
     <div className="shell">
       <aside className={`sidebar${menuOpen ? ' open' : ''}`}>
-        <div className="brand">
+        <Link href="/" className="brand" title="Back to the CQI home page">
           <Image src="/uganda-coat-of-arms.png" alt="Coat of arms of the Republic of Uganda" width={424} height={459} priority className="brand-logo" />
           <div>
             <span className="brand-title">CQI</span>
             <span className="brand-sub">Jinja Regional Referral Hospital</span>
           </div>
-        </div>
+        </Link>
         <nav aria-label="Dashboard sections">
           {TABS.map((t) => (
             <button type="button" key={t.id} className={`nav-item${tab === t.id ? ' active' : ''}`} onClick={() => go(t.id)} aria-current={tab === t.id ? 'page' : undefined}>
@@ -180,11 +208,22 @@ export default function Dashboard() {
                 {PRESETS.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
               </select>
             </label>
-            <Select label="District" value={filters.district} options={opts.districts} allLabel="All districts"
+            <Select label="District" value={filters.district} options={districtOptions} allLabel="All districts"
               onChange={(v) => setF({ district: v, facility: v === ALL || opts.facilityDistricts[filters.facility] === v ? filters.facility : ALL })} />
             <FacilitySearch value={filters.facility} options={facilityOptions} onChange={(v) => setF({ facility: v })} allLabel="All facilities" />
             <Select label="Department or ward" value={filters.department} options={opts.departments} onChange={(v) => setF({ department: v })} allLabel="All departments" />
             {changed && <button type="button" className="btn ghost small reset" onClick={() => setFilters(DEFAULT_FILTERS)}>Reset filters</button>}
+          </div>
+        )}
+
+        {tab !== 'forms' && facilityEntries === 0 && (
+          <div className="banner info no-entries" role="status">
+            <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true"><rect x="2.5" y="2.5" width="15" height="15" fill="none" stroke="currentColor" strokeWidth="1.6" /><path d="M10 9v5M10 6.2v.3" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square" /></svg>
+            <span>
+              {mode === 'demo' ? 'The demonstration data has no entries for ' : 'No entries have been received from '}<strong>{filters.facility}</strong>
+              {' '}in the selected period. Results appear here once its team submits a CQI form.
+            </span>
+            <button type="button" className="btn small" onClick={() => setFilters(DEFAULT_FILTERS)}>Show the whole region</button>
           </div>
         )}
 
