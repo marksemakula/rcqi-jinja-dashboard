@@ -37,6 +37,9 @@ export const palette = {
   inkSoft: '#4A5136',
   inkMuted: '#6B7158',
   onDark: '#F4F5EC',
+  // Institutional lines on the landing page (Ministry of Health in black, the hospital name in dark grey)
+  black: '#000000',
+  greyDark: '#404040',
   // Reserved status colours (always shown with an icon and a label)
   statusGood: '#3B4420',
   statusWarn: '#C9971C',

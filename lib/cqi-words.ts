@@ -42,8 +42,25 @@ export interface FieldWord {
   upper: boolean;
 }
 
+/** 'along' lines run with the field (rising to the right on screen); 'across' lines run at right angles to it (reading downwards). */
+export type Direction = 'along' | 'across';
+
+export interface FieldBlock {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  dir: Direction;
+  lines: FieldWord[][];
+}
+
+/** Size of the whole field in pixels, before it is rotated and centred on the half page. */
+export const FIELD_W = 2000;
+export const FIELD_H = 2400;
 /** Font size in pixels for each size step. */
 export const FIELD_SIZES = [0, 12, 14, 16, 19, 23, 28, 36, 46];
+const GAP = 14;
+const MIN_SIDE = 260;
 
 /** Small, fast, seeded generator (mulberry32), so the field is the same on the server and in the browser. */
 function seeded(seed: number) {
@@ -67,19 +84,17 @@ function pick<T>(rand: () => number, weighted: [T, number][]): T {
   return weighted[weighted.length - 1][0];
 }
 
-/**
- * Lines of words for the landing page field. Each line is filled to roughly `width` pixels; most words are small, light
- * and faint, with a few larger, bolder and brighter ones, as in a typographic word cloud.
- */
-export function buildWordField(seed = 1898, lines = 64, width = 2000): FieldWord[][] {
-  const rand = seeded(seed);
+/** Lines of words that fill `length` by `breadth` pixels (length runs with the text, breadth across the lines). */
+function fillLines(rand: () => number, length: number, breadth: number): FieldWord[][] {
   const words = CQI_VOCABULARY as readonly string[];
   const out: FieldWord[][] = [];
   let previous = '';
-  for (let l = 0; l < lines; l++) {
+  let filled = 0;
+  while (filled < breadth + 30) {
     const line: FieldWord[] = [];
     let used = 0;
-    while (used < width) {
+    let tallest = 0;
+    while (used < length * 1.2) {
       let text = words[Math.floor(rand() * words.length)];
       if (text === previous) text = words[(words.indexOf(text) + 7) % words.length];
       previous = text;
@@ -90,8 +105,41 @@ export function buildWordField(seed = 1898, lines = 64, width = 2000): FieldWord
       const upper = weight === 700 ? rand() < 0.6 : rand() < 0.06;
       line.push({ text, size, weight, tone, upper });
       used += text.length * FIELD_SIZES[size] * (upper ? 0.68 : 0.55) + 12;
+      tallest = Math.max(tallest, FIELD_SIZES[size]);
     }
     out.push(line);
+    filled += tallest * 1.02;
   }
   return out;
+}
+
+/**
+ * The landing page field: the area is cut into rectangular blocks of different sizes, and each block is filled with lines
+ * of words running either along the field or across it, so the text direction changes from block to block. Most words
+ * are small, light and faint, with a few larger, bolder and brighter ones, as in a typographic word cloud.
+ */
+export function buildWordField(seed = 1898): FieldBlock[] {
+  const rand = seeded(seed);
+  const leaves: { x: number; y: number; w: number; h: number }[] = [];
+  const split = (x: number, y: number, w: number, h: number, depth: number) => {
+    const canW = w >= MIN_SIDE * 2;
+    const canH = h >= MIN_SIDE * 2;
+    if ((!canW && !canH) || (depth >= 3 && rand() < 0.3)) { leaves.push({ x, y, w, h }); return; }
+    const vertical = canW && (!canH || (w >= h ? rand() < 0.75 : rand() < 0.25));
+    const side = vertical ? w : h;
+    const cut = Math.round(Math.max(MIN_SIDE, Math.min(side - MIN_SIDE, side * (0.3 + rand() * 0.4))));
+    if (vertical) { split(x, y, cut, h, depth + 1); split(x + cut, y, w - cut, h, depth + 1); }
+    else { split(x, y, w, cut, depth + 1); split(x, y + cut, w, h - cut, depth + 1); }
+  };
+  split(0, 0, FIELD_W, FIELD_H, 0);
+  let previous: Direction = 'across';
+  return leaves.map((b) => {
+    // Neighbouring blocks in the cut order usually change direction, so the two directions are well mixed.
+    const dir: Direction = rand() < 0.72 ? (previous === 'along' ? 'across' : 'along') : previous;
+    previous = dir;
+    const w = b.w - GAP;
+    const h = b.h - GAP;
+    const lines = dir === 'along' ? fillLines(rand, w, h) : fillLines(rand, h, w);
+    return { x: b.x, y: b.y, w, h, dir, lines };
+  });
 }
