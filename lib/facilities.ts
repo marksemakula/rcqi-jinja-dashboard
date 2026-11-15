@@ -31,9 +31,3 @@ export function landingFacilities(): LandingFacility[] {
 export function landingDistricts(): string[] {
   return Array.from(new Set((directory.facilities as DirectoryEntry[]).map((f) => f.district))).sort((a, b) => a.localeCompare(b));
 }
-
-/** When the list was pulled from DHIS2, as a date in words. */
-export function pulledOn(): string {
-  const d = new Date(`${directory.pulled}T00:00:00Z`);
-  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' });
-}

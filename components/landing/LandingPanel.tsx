@@ -28,7 +28,7 @@ export function dashboardHref(district: string, facility: LandingFacility | null
  * The right half of the landing page: the coat of arms, the programme title and a facility filter over every DHIS2
  * facility in Busoga. Choosing a district narrows the facilities; choosing a facility sets its district.
  */
-export default function LandingPanel({ facilities, districts, pulled }: { facilities: LandingFacility[]; districts: string[]; pulled: string }) {
+export default function LandingPanel({ facilities, districts }: { facilities: LandingFacility[]; districts: string[] }) {
   const [district, setDistrict] = useState<string>(ALL);
   const [facilityId, setFacilityId] = useState<string>('');
   const facility = useMemo(() => facilities.find((f) => f.id === facilityId) || null, [facilities, facilityId]);
@@ -93,13 +93,11 @@ export default function LandingPanel({ facilities, districts, pulled }: { facili
           </div>
           <div className="landing-actions">
             <Link className="btn landing-open" href={href}>Open the dashboard</Link>
-            <Link className="btn ghost" href="/dashboard">View the whole region</Link>
+            <Link className="btn ghost" href="/dashboard#forms">Submit CQI form</Link>
           </div>
         </div>
 
-        <p className="landing-source">
-          Facility list from Uganda eHMIS (DHIS2), {pulled}. <Link href="/dashboard#forms">Submit a CQI form</Link>
-        </p>
+        <p className="landing-footer">&copy; 2026 Regional CQI. All rights reserved.</p>
       </div>
     </section>
   );

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import LandingPanel from '@/components/landing/LandingPanel';
 import WordField from '@/components/landing/WordField';
-import { landingDistricts, landingFacilities, pulledOn } from '@/lib/facilities';
+import { landingDistricts, landingFacilities } from '@/lib/facilities';
 
 export const metadata: Metadata = {
   title: 'Continuous Quality Improvement | Jinja Regional Referral Hospital'
@@ -17,7 +17,7 @@ export default function LandingPage() {
       <script dangerouslySetInnerHTML={{ __html: FORWARD }} />
       <div className="landing">
         <WordField />
-        <LandingPanel facilities={landingFacilities()} districts={landingDistricts()} pulled={pulledOn()} />
+        <LandingPanel facilities={landingFacilities()} districts={landingDistricts()} />
       </div>
     </>
   );
