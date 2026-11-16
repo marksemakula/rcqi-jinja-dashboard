@@ -34,7 +34,8 @@ var RCQI = {
   // A 144 px copy for email (shown at 48 px), so each notification stays small on mobile data.
   emailLogoUrl: 'https://raw.githubusercontent.com/marksemakula/rcqi-jinja-dashboard/main/public/uganda-coat-of-arms-email.png',
   logoWidth: 130,
-  dashboardUrl: 'https://rcqi-jinja-dashboard.vercel.app',
+  // The dashboard's own address (rcqi-jinja-dashboard.vercel.app also still works).
+  dashboardUrl: 'https://cqi.inzozi.co',
   /** The name that owns the forms, dashboard and emails (Mark, 15 Nov 2026). */
   brand: 'MoH - Busoga RCQI',
   mailName: 'MoH - Busoga RCQI',
@@ -1835,7 +1836,7 @@ function journalNotification_(def, values, rowNumber, coordRows, opts) {
     add('People now on the list', String(team.length));
   }
 
-  var link = RCQI.dashboardUrl + '/#journal/' + encodeURIComponent(label);
+  var link = RCQI.dashboardUrl + '/dashboard#journal/' + encodeURIComponent(label);
   var footer = 'You receive these emails because your address is on this project\'s team list or on the CQI coordinator list. ' +
     'To be removed, ask the team leader to use "Update the team email list" in the QI Documentation Journal form, or contact the CQI coordinator.';
   var content = { headline: headline, title: title, facility: facility, intro: intro, facts: facts, link: link, formUrl: opts.formUrl || '', footer: footer, hasLogo: !!opts.hasLogo };

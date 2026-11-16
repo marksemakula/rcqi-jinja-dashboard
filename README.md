@@ -4,8 +4,8 @@ Interactive dashboard for Continuous Quality Improvement (CQI) for MoH - Busoga 
 
 ## Live links
 
-- Home page and facility search: https://rcqi-jinja-dashboard.vercel.app
-- Dashboard: https://rcqi-jinja-dashboard.vercel.app/dashboard
+- Home page and facility search: https://cqi.inzozi.co (also https://rcqi-jinja-dashboard.vercel.app)
+- Dashboard: https://cqi.inzozi.co/dashboard
 - Patient Safety Report (HSR): https://forms.gle/arH8fvVAzBxG61iS8
 - 5S Monitoring and Evaluation: https://forms.gle/TAKi9NU6GHDZQFBPA
 - Hand Hygiene Observation: https://forms.gle/hbudJaqDuijoZ9ob9
