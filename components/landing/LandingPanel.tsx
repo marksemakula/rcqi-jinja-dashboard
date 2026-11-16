@@ -51,6 +51,7 @@ export default function LandingPanel({ facilities, districts }: { facilities: La
         <Image src="/uganda-coat-of-arms.png" alt="Coat of arms of the Republic of Uganda" width={424} height={459} priority className="landing-arms" />
         <p className="landing-ministry">MINISTRY OF HEALTH</p>
         <p className="landing-hospital">Jinja Regional Referral Hospital</p>
+        <p className="landing-department">Public Health Department</p>
         <h1>Continuous Quality Improvement</h1>
         <p className="landing-lead">
           Results from the CQI tools for every health facility in Busoga: patient safety, hand hygiene, infection prevention and

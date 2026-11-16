@@ -40,6 +40,8 @@ export const palette = {
   // Institutional lines on the landing page (Ministry of Health in black, the hospital name in dark grey)
   black: '#000000',
   greyDark: '#404040',
+  // The Public Health Department line on the landing page (Mark, 16 Nov 2026)
+  maroon: '#800000',
   // Reserved status colours (always shown with an icon and a label)
   statusGood: '#3B4420',
   statusWarn: '#C9971C',

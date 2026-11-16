@@ -27,6 +27,7 @@
   --on-dark: #F4F5EC;
   --black: #000000;
   --grey-dark: #404040;
+  --maroon: #800000;
   --good: #3B4420;
   --warn: #C9971C;
   --bad: #A3402C;
@@ -36,7 +37,7 @@
 }
 
 * { box-sizing: border-box; }
-html, body { margin: 0; padding: 0; }
+html, body { margin: 0; padding: 0; overscroll-behavior-y: none; }
 body {
   background: var(--surface);
   color: var(--ink);
@@ -51,7 +52,10 @@ a { color: var(--ag-700); }
 :focus-visible { outline: 2px solid var(--khaki-dark); outline-offset: 2px; border-radius: 0; }
 
 /* Shell ------------------------------------------------------------------- */
-.shell { display: grid; grid-template-columns: 252px minmax(0, 1fr); min-height: 100vh; }
+/* Columns size to their own content (not stretched), so nothing inside can grow with the row and push the page past
+   the shell, which left pale space under the left pane in some browsers. */
+.shell { display: grid; grid-template-columns: 252px minmax(0, 1fr); align-items: start; min-height: 100vh; }
+#content { height: auto; }
 .sidebar {
   position: sticky; top: 0; height: 100vh; overflow-y: auto;
   background: linear-gradient(180deg, var(--ag-800) 0%, var(--ag-900) 100%);
@@ -401,7 +405,8 @@ nav { display: flex; flex-direction: column; gap: 2px; }
 .landing-inner { width: 100%; max-width: 470px; }
 .landing-arms { display: block; width: auto; height: 132px; margin: 0 auto 20px; border-radius: 0; background: none; }
 .landing-ministry { margin: 0 0 4px; text-align: center; font-size: 17px; font-weight: 700; letter-spacing: 0.14em; color: var(--black); }
-.landing-hospital { margin: 0 0 18px; text-align: center; font-size: 15px; font-weight: 500; color: var(--grey-dark); }
+.landing-hospital { margin: 0 0 2px; text-align: center; font-size: 15px; font-weight: 500; color: var(--grey-dark); }
+.landing-department { margin: 0 0 18px; text-align: center; font-size: 14px; font-weight: 700; letter-spacing: 0.02em; color: var(--maroon); }
 .landing-panel h1 { margin: 0 0 12px; text-align: center; font-size: 34px; line-height: 1.15; font-weight: 700; color: var(--ag-800); }
 .landing-lead { margin: 0 0 26px; text-align: center; font-size: 15px; color: var(--ink-soft); }
 .landing-filter { padding: 20px 20px 22px; background: var(--card); border: 1px solid var(--border); border-top: 3px solid var(--ag-600); border-radius: 0; box-shadow: var(--shadow); }
