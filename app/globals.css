@@ -402,12 +402,14 @@ nav { display: flex; flex-direction: column; gap: 2px; }
 .word-field .up { text-transform: uppercase; letter-spacing: 0.03em; }
 
 .landing-panel { display: flex; align-items: center; justify-content: center; padding: 48px 40px; border-left: 4px solid var(--khaki); background: var(--surface); }
-.landing-inner { width: 100%; max-width: 470px; }
+.landing-inner { width: 100%; max-width: 560px; }
 .landing-arms { display: block; width: auto; height: 132px; margin: 0 auto 20px; border-radius: 0; background: none; }
 .landing-ministry { margin: 0 0 4px; text-align: center; font-size: 17px; font-weight: 700; letter-spacing: 0.14em; color: var(--black); }
 .landing-hospital { margin: 0 0 2px; text-align: center; font-size: 15px; font-weight: 500; color: var(--grey-dark); }
 .landing-department { margin: 0 0 18px; text-align: center; font-size: 14px; font-weight: 700; letter-spacing: 0.02em; color: var(--maroon); }
-.landing-panel h1 { margin: 0 0 12px; text-align: center; font-size: 34px; line-height: 1.15; font-weight: 700; color: var(--ag-800); }
+/* One line at every width (Mark, 16 Nov 2026): full size where the half page allows, otherwise just small enough to fit.
+   The title is about 16 times its font size wide. */
+.landing-panel h1 { margin: 0 0 12px; text-align: center; font-size: min(34px, calc((50vw - 88px) / 16)); line-height: 1.15; font-weight: 700; white-space: nowrap; color: var(--ag-800); }
 .landing-lead { margin: 0 0 26px; text-align: center; font-size: 15px; color: var(--ink-soft); }
 .landing-filter { padding: 20px 20px 22px; background: var(--card); border: 1px solid var(--border); border-top: 3px solid var(--ag-600); border-radius: 0; box-shadow: var(--shadow); }
 .landing-filter h2 { margin: 0 0 14px; font-size: 15px; font-weight: 700; color: var(--ag-800); }
@@ -435,7 +437,7 @@ nav { display: flex; flex-direction: column; gap: 2px; }
   .word-field { transform: translate(-50%, -50%) rotate(-38deg) scale(0.82); }
   .landing-panel { padding: 28px 16px 36px; border-left: 0; border-top: 4px solid var(--khaki); }
   .landing-arms { height: 96px; margin-bottom: 14px; }
-  .landing-panel h1 { font-size: 27px; }
+  .landing-panel h1 { font-size: min(27px, calc((100vw - 40px) / 16)); }
   .landing-lead { font-size: 14px; margin-bottom: 20px; }
   .landing-filter { padding: 16px; }
 }
