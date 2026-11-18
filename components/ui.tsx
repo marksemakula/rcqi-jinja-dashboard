@@ -33,6 +33,9 @@ export function DataTable({ table, maxRows = 200, onRowClick }: { table: TableDa
       return String(x ?? '').localeCompare(String(y ?? ''), 'en-GB', { numeric: true }) * sort.dir;
     });
   }, [table, sort]);
+  // Columns holding long free text (any value over 60 characters) wrap within a set width; every other cell stays on one
+  // line, so a wide table slides left to right inside its card instead of squeezing.
+  const longCols = useMemo(() => new Set(table.columns.map((_, j) => j).filter((j) => table.rows.some((r) => typeof r[j] === 'string' && (r[j] as string).length > 60))), [table]);
   return (
     <div className="table-wrap">
       <table className="data-table">
@@ -50,7 +53,7 @@ export function DataTable({ table, maxRows = 200, onRowClick }: { table: TableDa
         <tbody>
           {rows.slice(0, maxRows).map((r, i) => (
             <tr key={i} onClick={onRowClick ? () => onRowClick(r) : undefined} className={onRowClick ? 'clickable' : undefined}>
-              {r.map((v, j) => <td key={j}>{typeof v === 'number' ? (Number.isInteger(v) ? v.toLocaleString('en-GB') : v.toFixed(1)) : v ?? ''}</td>)}
+              {r.map((v, j) => <td key={j} className={longCols.has(j) ? 'long' : undefined}>{typeof v === 'number' ? (Number.isInteger(v) ? v.toLocaleString('en-GB') : v.toFixed(1)) : v ?? ''}</td>)}
             </tr>
           ))}
         </tbody>
