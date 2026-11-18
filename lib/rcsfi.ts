@@ -12,7 +12,7 @@ export interface RcsfiConfig {
   /** What the dashboard is, shown under its card title. */
   dashboardAbout: string;
   /**
-   * How to sign in. The dashboard needs a login: never put the user name or password here, because this site and its
+   * How to sign in. The dashboard needs a sign-in; never put the user name or password here, because this site and its
    * code are public. The secretariat shares the login privately.
    */
   signIn: string;
@@ -28,7 +28,8 @@ export const RCSFI: RcsfiConfig = {
   dashboardUrl: 'https://odk.health.go.ug/dashboard',
   dashboardAbout: 'The Ministry of Health Client Satisfaction Feedback dashboard: client satisfaction scores and trends, concerns, comments and the action plan matrix, by region, district and facility.',
   signIn: 'Sign-in required. Ask the regional CQI secretariat (JRRH Public Health Department) for the Busoga login.',
-  aciUrl: ''
+  // The Assisted Client Interview form in the CQI system, created 18 Nov 2026 from the MoH tool.
+  aciUrl: 'https://forms.gle/VEx3fgn9fVwjUNCp6'
 };
 
 /** Only a full https address is used as a link or put in the QR code. */
