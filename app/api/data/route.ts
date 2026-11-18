@@ -18,7 +18,9 @@ export async function GET() {
       headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({ token }),
       redirect: 'follow',
-      next: { revalidate: 120 },
+      // Not held in Next's data cache: a failed background refresh there kept serving a day-old payload (18 Nov 2026).
+      // The CDN still caches the response below for two minutes, and the data service caches its payload for one.
+      cache: 'no-store',
       signal: AbortSignal.timeout(25000)
     });
     const text = await res.text();
