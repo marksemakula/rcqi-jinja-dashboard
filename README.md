@@ -13,7 +13,7 @@ Interactive dashboard for Continuous Quality Improvement (CQI) for MoH - Busoga 
 - IPC Facility Assessment Tool (MoH 2024): https://forms.gle/WmphR6YYddGHrzYq7
 - HFQAP Facility Assessment: https://forms.gle/hFs5hkFzZS7WtD398
 - QI Documentation Journal: https://forms.gle/BuXfJkM2TPcgZQ346
-- QI Collaborative Register: shown on the Forms and Data page once created (run `addMissingForms`, see below)
+- QI Collaborative Register: https://forms.gle/EqexqGEKyTAv9TAt9
 
 The master sheet, the forms and the Apps Script project live in the "CQI Jinja RRH" folder of the CQI Google Drive account.
 
