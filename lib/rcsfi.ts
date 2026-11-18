@@ -9,6 +9,13 @@ export interface RcsfiConfig {
   fullName: string | null;
   /** The RCSFI dashboard. */
   dashboardUrl: string;
+  /** What the dashboard is, shown under its card title. */
+  dashboardAbout: string;
+  /**
+   * How to sign in. The dashboard needs a login: never put the user name or password here, because this site and its
+   * code are public. The secretariat shares the login privately.
+   */
+  signIn: string;
   /** The Assisted Client Interview (ACI) form. The QR code on the page opens this address. */
   aciUrl: string;
 }
@@ -16,7 +23,10 @@ export interface RcsfiConfig {
 export const RCSFI: RcsfiConfig = {
   short: 'RCSFI',
   fullName: null,
-  dashboardUrl: '',
+  // The Ministry of Health Client Satisfaction Feedback (CSF) dashboard (Mark, 18 Nov 2026).
+  dashboardUrl: 'https://odk.health.go.ug/dashboard',
+  dashboardAbout: 'The Ministry of Health Client Satisfaction Feedback dashboard: client satisfaction scores and trends, concerns, comments and the action plan matrix, by region, district and facility.',
+  signIn: 'Sign-in required. Ask the regional CQI secretariat (JRRH Public Health Department) for the Busoga login.',
   aciUrl: ''
 };
 

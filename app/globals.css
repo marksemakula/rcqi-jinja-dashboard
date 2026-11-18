@@ -485,3 +485,4 @@ nav { display: flex; flex-direction: column; gap: 2px; }
   .rcsfi-qr img { width: 120mm; height: 120mm; border: 0; }
 }
 .journal-collab { margin: 8px 0 0; font-size: 13.5px; color: var(--ink-soft); display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap; }
+.rcsfi-signin { margin: 0; font-size: 13px; }

@@ -27,10 +27,13 @@ export default function Rcsfi(_props: TabProps & { config?: RcsfiConfig }) {
       </div>
       <div className="rcsfi-grid">
         <section className="card rcsfi-card print-hide" aria-label="RCSFI dashboard">
-          <header className="card-head"><div><h3>RCSFI dashboard</h3><p className="card-sub">Results from the RCSFI client interviews.</p></div></header>
+          <header className="card-head"><div><h3>RCSFI dashboard</h3><p className="card-sub">{config.dashboardAbout || 'Results from the RCSFI client interviews.'}</p></div></header>
           <div className="rcsfi-body">
             {dashboardUrl ? (
-              <div className="form-actions"><a className="btn rcsfi-dashboard" href={dashboardUrl} target="_blank" rel="noopener noreferrer">Open the RCSFI dashboard</a></div>
+              <>
+                <div className="form-actions"><a className="btn rcsfi-dashboard" href={dashboardUrl} target="_blank" rel="noopener noreferrer">Open the RCSFI dashboard</a></div>
+                {config.signIn && <p className="muted rcsfi-signin">{config.signIn}</p>}
+              </>
             ) : <p className="muted rcsfi-pending">{pending}</p>}
           </div>
         </section>
