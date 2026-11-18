@@ -5,7 +5,7 @@
  *
  * How to use
  *   1. Run setupCQI() once. It creates a Drive folder, the master spreadsheet,
- *      seven Google Forms linked to their own tabs, the HSR reference trigger and
+ *      a Google Form for each tool linked to its own tab, the HSR reference trigger and
  *      an API token, loads the DHIS2 facility list and the notification tabs. On an existing installation,
  *      run addMissingForms() to add a new form or upgradeForms() to add new
  *      questions to a live form, then publish a new version of the web app.
@@ -1159,7 +1159,8 @@ function writeReadMe_(ss, links) {
     ['Form', 'Share link']
   ];
   var formRow = rows.length;
-  FORM_DEFS.forEach(function (def) { rows.push([def.short, links[def.key].shortUrl]); });
+  // A form added to the code but not yet created (addMissingForms) has no link yet and is listed once it exists.
+  FORM_DEFS.forEach(function (def) { if (links[def.key]) rows.push([def.short, links[def.key].shortUrl]); });
   sh.getRange(1, 1, rows.length, 2).setValues(rows);
   sh.getRange(1, 1, sh.getMaxRows(), sh.getMaxColumns()).setFontFamily(RCQI.font);
   sh.getRange(1, 1).setFontSize(14).setFontWeight('bold').setFontColor(RCQI.headerColour);
