@@ -47,7 +47,7 @@ function runChart(p: JournalProject): Opt {
   };
 }
 
-export default function Journal({ all, filters, forms, focus }: TabProps) {
+export default function Journal({ all, filters, forms, focus, go }: TabProps) {
   const projects = useMemo(() => filterProjects(buildJournal(all.qij), filters), [all.qij, filters]);
   const [label, setLabel] = useState<string | null>(null);
   useEffect(() => { if (focus) setLabel(focus); }, [focus]);
@@ -158,6 +158,9 @@ export default function Journal({ all, filters, forms, focus }: TabProps) {
             <div><dt>End date</dt><dd>{fmtDate(sel.endDate) || 'Not set'}</dd></div>
             <div><dt>Status</dt><dd>{sel.status}</dd></div>
           </dl>
+          {sel.collaborative && (
+            <p className="journal-collab">Part of the QI collaborative <button type="button" className="link-button" onClick={() => go('collaboratives', sel.collaborative!)}>{sel.collaborative}</button></p>
+          )}
 
           <h3 className="journal-part">Part 1: Improvement objective and problem</h3>
           <div className="journal-boxes">

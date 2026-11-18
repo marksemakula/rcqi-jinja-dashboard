@@ -9,19 +9,23 @@ import { countBy, daysBetween, fmtDate, fmtInt, fmtPct, median, monthKey, monthR
 import { ordinal5, palette } from '@/lib/palette';
 import type { HsrRec } from '@/lib/types';
 
-type Dim = 'category' | 'location' | 'timeframe' | 'department' | 'eventType' | 'outcome' | 'status' | 'cadre' | 'harmed';
+type Dim = 'facility' | 'category' | 'location' | 'timeframe' | 'department' | 'eventType' | 'outcome' | 'status' | 'cadre' | 'harmed';
 const DIM_LABEL: Record<Dim, string> = {
-  category: 'Category', location: 'Location', timeframe: 'Timeframe', department: 'Department', eventType: 'Event type',
+  facility: 'Facility', category: 'Category', location: 'Location', timeframe: 'Timeframe', department: 'Department', eventType: 'Event type',
   outcome: 'Outcome', status: 'QI status', cadre: 'Reporter cadre', harmed: 'Who was harmed'
 };
 const OUTCOME_SHORT: Record<string, string> = {
   [HSR_OUTCOMES[0]]: 'Near miss', [HSR_OUTCOMES[1]]: 'Adverse event, no harm', [HSR_OUTCOMES[2]]: 'Adverse event, harm'
 };
 const statusOf = (r: HsrRec) => r.status || 'Pending review';
+/** Reports made before the HSR was opened to every facility (18 November 2026) carry no facility. */
+const NO_FACILITY = 'Facility not recorded';
+const facilityOf = (r: HsrRec) => r.facility || NO_FACILITY;
 
 function valueOf(r: HsrRec, d: Dim): string[] {
   if (d === 'harmed') return r.harmed || [];
   if (d === 'status') return [statusOf(r)];
+  if (d === 'facility') return [facilityOf(r)];
   const v = (r as unknown as Record<string, unknown>)[d];
   return v ? [String(v)] : [];
 }
@@ -138,15 +142,16 @@ export default function Safety({ data, forms }: TabProps) {
   }, [rows, today]);
 
   const register: TableData = useMemo(() => ({
-    columns: ['Reference', 'Date', 'Department', 'Category', 'Outcome', 'QI status', 'Days open'],
+    columns: ['Reference', 'Date', 'Facility', 'District', 'Department', 'Category', 'Outcome', 'QI status', 'Days open'],
     rows: rows.slice().sort((a, b) => (b.date || '').localeCompare(a.date || '')).map((r) => [
-      r.ref || r.id, fmtDate(r.date), r.department, r.category, OUTCOME_SHORT[r.outcome || ''] || r.outcome, statusOf(r),
+      r.ref || r.id, fmtDate(r.date), facilityOf(r), r.district || null, r.department, r.category, OUTCOME_SHORT[r.outcome || ''] || r.outcome, statusOf(r),
       statusOf(r) === 'Resolved' ? null : r.date ? daysBetween(r.date, today) : null
     ])
   }), [rows, today]);
 
   const chips = (Object.entries(sel) as [Dim, string | undefined][]).filter(([, v]) => v).map(([d, v]) => ({ key: d, label: `${DIM_LABEL[d]}: ${OUTCOME_SHORT[v!] || v}`, onRemove: () => toggle(d, v!) }));
   const cat = hbar(rowsExcept('category'), 'category', sel.category || null);
+  const fac = hbar(rowsExcept('facility'), 'facility', sel.facility || null, 15);
   const dept = hbar(rowsExcept('department'), 'department', sel.department || null, 12);
   const type = hbar(rowsExcept('eventType'), 'eventType', sel.eventType || null);
   const cadre = hbar(rowsExcept('cadre'), 'cadre', sel.cadre || null);
@@ -157,7 +162,7 @@ export default function Safety({ data, forms }: TabProps) {
 
   return (
     <div className="tab">
-      <SectionTitle title="Patient safety reporting" text="Near misses and adverse events reported through the Health Facility Patient Safety Report (HSR). Select any bar or cell to filter every chart on this page; select it again to clear." />
+      <SectionTitle title="Patient safety reporting" text="Near misses and adverse events reported by health facilities across Busoga through the Health Facility Patient Safety Report (HSR). The district and facility filters above narrow every chart. Select any bar or cell to filter every chart on this page; select it again to clear." />
       <Chips chips={chips} onClear={() => setSel({})} />
       <div className="kpis">
         <Kpi label="Reports" value={fmtInt(kpi.n)} sub="In the selected period" />
@@ -171,15 +176,16 @@ export default function Safety({ data, forms }: TabProps) {
           onClick={(p) => toggle('outcome', HSR_OUTCOMES.find((o) => OUTCOME_SHORT[o] === p.seriesName) || '')} />
         <ChartCard title="QI review status" subtitle="Follow-up status recorded by the QI Committee in the master sheet." option={status.option} table={status.table} empty={empty} emptyText={emptyText} height={status.height}
           onClick={(p) => toggle('status', p.name)} />
+        <ChartCard title="Reporting facility" subtitle="Facilities by number of reports (the top 15). A high count often reflects a strong reporting culture." option={fac.option} table={fac.table} empty={empty} emptyText={emptyText} height={fac.height} onClick={(p) => toggle('facility', p.name)} />
+        <ChartCard title="Reporting department" subtitle="Top departments by number of reports." option={dept.option} table={dept.table} empty={empty} emptyText={emptyText} height={dept.height} onClick={(p) => toggle('department', p.name)} />
         <ChartCard title="Event category" subtitle="What the event related to." option={cat.option} table={cat.table} empty={empty} emptyText={emptyText} height={cat.height} onClick={(p) => toggle('category', p.name)} />
         <ChartCard title="Where and when" subtitle="Location by timeframe of occurrence." option={heat.option} table={heat.table} empty={empty} emptyText={emptyText} height={Math.max(260, 90 + heat.locs.length * 26)}
           onClick={(p) => { const v = p.value as number[]; toggle('location', heat.locs[v[1]]); }} />
-        <ChartCard title="Reporting department" subtitle="Top departments by number of reports." option={dept.option} table={dept.table} empty={empty} emptyText={emptyText} height={dept.height} onClick={(p) => toggle('department', p.name)} />
         <ChartCard title="Type of event" subtitle="Unsafe acts, conditions and equipment." option={type.option} table={type.table} empty={empty} emptyText={emptyText} height={type.height} onClick={(p) => toggle('eventType', p.name)} />
         <ChartCard title="Reporter cadre" subtitle="Who is reporting: a marker of safety culture." option={cadre.option} table={cadre.table} empty={empty} emptyText={emptyText} height={cadre.height} onClick={(p) => toggle('cadre', p.name)} />
         <ChartCard title="Who was harmed or at risk" subtitle="A report can involve more than one group." option={harmed.option} table={harmed.table} empty={empty} emptyText={emptyText} height={harmed.height} onClick={(p) => toggle('harmed', p.name)} />
-        <ChartCard title="Open reports by age" subtitle="Time since occurrence for reports not yet resolved." option={ageing.option} table={ageing.table} empty={empty} emptyText={emptyText} height={240} />
-        <section className="card span-2" aria-label="Report register">
+        <ChartCard span={2} title="Open reports by age" subtitle="Time since occurrence for reports not yet resolved." option={ageing.option} table={ageing.table} empty={empty} emptyText={emptyText} height={240} />
+        <section className="card span-3" aria-label="Report register">
           <header className="card-head"><div><h3>Report register</h3><p className="card-sub">Structured fields only. Descriptions, causes and countermeasures remain in the master sheet for the QI Committee.</p></div></header>
           {register.rows.length ? <DataTable table={register} maxRows={25} /> : <p className="card-sub pad">{emptyText}</p>}
         </section>

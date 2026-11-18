@@ -8,8 +8,8 @@ import {
   HSR_OUTCOMES, HSR_STATUSES, HSR_TIMEFRAMES, MOH_IPC_AREAS, MOH_IPC_GRADED, MOH_IPC_REVERSE
 } from './catalogue';
 import { expectedFor, levelKey } from './scoring';
-import { JOURNAL_ENTRY_TYPES, projectLabel } from './journal';
-import type { Dataset, FiveSRec, HfqapRec, HhRec, HsrRec, IpcBasicRec, IpcMohRec, QijRec } from './types';
+import { JOURNAL_ENTRY_TYPES, NOT_IN_COLLAB, projectLabel } from './journal';
+import type { CollabRec, Dataset, FiveSRec, HfqapRec, HhRec, HsrRec, IpcBasicRec, IpcMohRec, QijRec } from './types';
 
 function mulberry32(seed: number) {
   let a = seed >>> 0;
@@ -64,8 +64,11 @@ export function buildDemo(today = new Date()): Dataset {
       const ageDays = (today.getTime() - date.getTime()) / 86400000;
       const status = ageDays > 75 ? pick(HSR_STATUSES, [0.05, 0.1, 0.05, 0.8]) : ageDays > 30 ? pick(HSR_STATUSES, [0.2, 0.3, 0.15, 0.35]) : pick(HSR_STATUSES, [0.6, 0.2, 0.1, 0.1]);
       const closed = status === 'Resolved' ? iso(new Date(date.getTime() + (5 + rnd() * 40) * 86400000)) : null;
+      // The HSR is open to every facility: most demonstration reports come from the RRH, every fourth from another facility.
+      // Chosen by sequence, not by the random stream, so every other demonstration figure stays the same.
+      const from = seq % 4 === 0 ? DEMO_FACILITIES[1 + ((seq / 4) % (DEMO_FACILITIES.length - 1))] : DEMO_FACILITIES[0];
       hsr.push({
-        id: `hsr-demo-${seq}`, ts: date.toISOString(), date: iso(date), facility: HOSPITAL, district: 'Jinja City', items: {},
+        id: `hsr-demo-${seq}`, ts: date.toISOString(), date: iso(date), facility: from.facility, district: from.district, items: {},
         cadre: pick(['Medical doctor', 'Nurse/Midwife', 'Pharmacist', 'Allied health professional', 'Intern/Trainee', 'Administrative staff', 'Engineer or workshop staff', 'Support staff'], [12, 40, 6, 9, 14, 4, 3, 6]),
         department: pick(DEPARTMENTS.concat(['Administration and management', 'Maintenance workshop', 'Laundry']), [10, 9, 12, 8, 11, 7, 5, 4, 5, 3, 6, 3, 2, 1, 2, 2, 1]),
         timeframe: pick(HSR_TIMEFRAMES, [55, 25, 20]),
@@ -223,6 +226,7 @@ export function buildDemo(today = new Date()): Dataset {
     },
     {
       facility: 'Namwendwa Health Centre IV', district: 'Kamuli', department: null, title: 'Early first antenatal visit', teamSize: 4, startBack: 10, endAhead: -1, target: 45,
+      collaborative: 'Early Antenatal Care Collaborative',
       objective: 'Increase the share of first antenatal visits made in the first trimester from 20% to 45%.',
       indicator: 'First antenatal visits within the first trimester (%)', numeratorDef: 'ANC first visits before 12 weeks of gestation', denominatorDef: 'All ANC first visits in the month',
       problem: 'Most mothers start antenatal care late, after the first trimester, missing early screening and counselling recommended by the MoH guidelines. Village health teams do not routinely identify newly pregnant women.',
@@ -243,7 +247,8 @@ export function buildDemo(today = new Date()): Dataset {
       id: `qij-demo-${pi}-reg`, ts: reg.toISOString(), date: iso(reg), facility: p.facility, district: p.district, items: {},
       entryType: JOURNAL_ENTRY_TYPES[0], region: 'Busoga', department: p.department, projectTitle: p.title, teamSize: p.teamSize,
       startDate: iso(reg), endDate: iso(endDate), objective: p.objective, indicator: p.indicator, numeratorDef: p.numeratorDef,
-      denominatorDef: p.denominatorDef, target: p.target, problem: p.problem
+      denominatorDef: p.denominatorDef, target: p.target, problem: p.problem,
+      collaborative: 'collaborative' in p && p.collaborative ? p.collaborative : NOT_IN_COLLAB
     });
     p.changes.forEach(([m, change, improved, comments], ci) => {
       const d = new Date(Date.UTC(start.getUTCFullYear(), startMonth + Number(m), 6 + ci));
@@ -273,5 +278,29 @@ export function buildDemo(today = new Date()): Dataset {
   if (hh[5]) Object.assign(hh[5], { facility: 'Bulidha HC', district: 'Bugiri', facilityMatch: 'review', facilityEntered: 'Bulidha HC', facilitySuggestion: 'Bulidha Health Centre III' });
   if (fives[3]) Object.assign(fives[3], { facility: 'Kyabirwa Surgical Centre', district: 'Jinja City', facilityMatch: 'unmatched', facilityEntered: 'Kyabirwa Surgical Centre' });
 
-  return { hsr, fives, hh, ipcBasic, ipcMoh, hfqap, qij };
+  /* QI Collaborative Register: one collaborative running, one awaiting approval (no random draws, so nothing above changes) */
+  const at = (monthsBack: number, d: number) => new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth() - monthsBack, d));
+  const anc = at(11, 2);
+  const ancApproved = at(10, 20);
+  const ancActive = at(9, 4);
+  const medicines = at(0, 4) > today ? at(1, 25) : at(0, 4);
+  const collab: CollabRec[] = [
+    {
+      id: 'collab-demo-1', ts: anc.toISOString(), date: iso(anc), items: {}, entryType: 'Register a new collaborative',
+      name: 'Early Antenatal Care Collaborative', status: 'Awaiting approval', lead: 'Regional MCH focal person', secretariat: 'Regional CQI secretariat',
+      aim: 'Increase the share of first antenatal visits made in the first trimester to 50% in each participating facility within eighteen months.',
+      startDate: iso(at(10, 1)), endDate: iso(at(-7, 30)), indicator: 'First antenatal visits within the first trimester (%)',
+      numeratorDef: 'ANC first visits before 12 weeks of gestation', denominatorDef: 'All ANC first visits in the month', target: 50,
+      plannedFacilities: 'Namwendwa HC IV\nKiyunga Health Centre IV\nIganga General Hospital', charter: null
+    },
+    { id: 'collab-demo-2', ts: ancApproved.toISOString(), date: iso(ancApproved), items: {}, entryType: 'Update a collaborative', collaborative: 'Early Antenatal Care Collaborative', newStatus: 'Approved', updateNotes: 'Charter approved by the Regional QI Committee.' },
+    { id: 'collab-demo-3', ts: ancActive.toISOString(), date: iso(ancActive), items: {}, entryType: 'Update a collaborative', collaborative: 'Early Antenatal Care Collaborative', newStatus: 'Active', updateNotes: 'First learning session held; facility teams registering their projects.' },
+    {
+      id: 'collab-demo-4', ts: medicines.toISOString(), date: iso(medicines), items: {}, entryType: 'Register a new collaborative',
+      name: 'Medicines Availability Collaborative', status: 'Awaiting approval', lead: 'Dr. Mathius and team', secretariat: 'Regional CQI secretariat',
+      aim: 'To be confirmed when the charter is approved.', indicator: 'To be confirmed when the charter is approved.', target: null, plannedFacilities: null, charter: null
+    }
+  ];
+
+  return { hsr, fives, hh, ipcBasic, ipcMoh, hfqap, qij, collab };
 }

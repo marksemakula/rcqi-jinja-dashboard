@@ -44,6 +44,8 @@ export interface JournalProject {
   denominatorDef: string | null;
   target: number | null;
   problem: string | null;
+  /** The QI collaborative chosen at registration, or null when the project is not part of one. */
+  collaborative: string | null;
   changes: JournalChange[];
   months: JournalMonth[];
   /** Every month from the first record or start date to the last record, so gaps show on the graph. */
@@ -52,6 +54,9 @@ export interface JournalProject {
   latestPct: number | null;
   status: 'Active' | 'Completed';
 }
+
+/** The answer on QI project registration for a project that is not part of a collaborative (NOT_IN_COLLAB_ in Code.gs). */
+export const NOT_IN_COLLAB = 'Not part of a collaborative';
 
 export const JOURNAL_ENTRY_TYPES = ['Register a new QI project', 'Record a change tested', 'Record monthly results', 'Update the team email list'];
 
@@ -141,6 +146,7 @@ export function buildJournal(records: QijRec[], today = new Date().toISOString()
       denominatorDef: reg?.denominatorDef || null,
       target: reg?.target ?? null,
       problem: reg?.problem || null,
+      collaborative: reg?.collaborative && reg.collaborative.trim() && reg.collaborative !== NOT_IN_COLLAB ? reg.collaborative.trim() : null,
       changes: changeRecs.map((c, i) => {
         const mk = monthOf(c.changeStart);
         return {

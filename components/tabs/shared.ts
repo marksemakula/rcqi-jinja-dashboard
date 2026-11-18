@@ -1,7 +1,7 @@
-import type { Dataset, FormKey, FormMeta, Mode } from '@/lib/types';
+import type { Dataset, DirectoryFacility, FormKey, FormMeta, Mode } from '@/lib/types';
 import type { Filters } from '@/lib/filters';
 
-export type TabId = 'overview' | 'safety' | 'hand' | 'ipc' | 'fives' | 'hfqap' | 'journal' | 'forms';
+export type TabId = 'overview' | 'safety' | 'hand' | 'ipc' | 'fives' | 'hfqap' | 'journal' | 'collaboratives' | 'rcsfi' | 'forms';
 
 export const TABS: { id: TabId; label: string; short: string; form?: FormKey }[] = [
   { id: 'overview', label: 'Overview', short: 'Overview' },
@@ -11,6 +11,8 @@ export const TABS: { id: TabId; label: string; short: string; form?: FormKey }[]
   { id: 'fives', label: '5S-CQI-TQM', short: '5S', form: 'fives' },
   { id: 'hfqap', label: 'HFQAP', short: 'HFQAP', form: 'hfqap' },
   { id: 'journal', label: 'QI Journal', short: 'Journal', form: 'qij' },
+  { id: 'collaboratives', label: 'QI Collaboratives', short: 'Collaboratives', form: 'collab' },
+  { id: 'rcsfi', label: 'RCSFI', short: 'RCSFI' },
   { id: 'forms', label: 'Forms and Data', short: 'Forms' }
 ];
 
@@ -23,4 +25,6 @@ export interface TabProps {
   go: (tab: TabId, focus?: string) => void;
   focus?: string | null;
   generatedAt?: string | null;
+  /** Every DHIS2 facility in Busoga, for matching facility names typed in the forms. */
+  directory: DirectoryFacility[];
 }

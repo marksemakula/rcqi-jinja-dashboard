@@ -456,3 +456,32 @@ nav { display: flex; flex-direction: column; gap: 2px; }
 @media (max-width: 600px) { .filters .select.narrow { flex: 1 1 calc(50% - 6px); min-width: 0; } }
 .combo-list { overflow-x: hidden; }
 .combo-list.right { left: auto; right: 0; }
+
+/* QI collaboratives */
+.collab-sheet { border-top: 6px solid var(--ag-600); }
+.collab-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; flex-wrap: wrap; padding-bottom: 12px; border-bottom: 1px solid var(--border); }
+.collab-head h2 { margin: 2px 0 0; font-size: 21px; font-weight: 700; color: var(--ag-900); }
+.collab-sheet .journal-boxes { margin-top: 12px; }
+.collab-projects { list-style: none; margin: 0; padding: 0; border: 1px solid var(--border); }
+.collab-projects li { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+.collab-projects li:last-child { border-bottom: 0; }
+.collab-projects span { font-size: 13px; color: var(--ink-muted); }
+.link-button { background: none; border: 0; padding: 0; font: inherit; font-weight: 700; font-size: 14px; color: var(--ag-700); text-align: left; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; width: fit-content; }
+.link-button:hover { color: var(--ag-900); }
+.collab-empty .toolbar { justify-content: center; margin: 4px 0 8px; }
+
+/* RCSFI */
+.rcsfi-grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 18px; align-items: start; }
+.rcsfi-body { padding: 4px 18px 18px; display: flex; flex-direction: column; gap: 14px; }
+.rcsfi-qr { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.rcsfi-qr img { width: 240px; height: 240px; border: 1px solid var(--border); padding: 8px; background: var(--card); }
+.rcsfi-qr .qr-placeholder { width: 240px; height: 240px; }
+.rcsfi-qr-caption { margin: 0; font-size: 13px; font-weight: 700; color: var(--ag-800); text-transform: uppercase; letter-spacing: 0.06em; }
+.rcsfi-pending { margin: 0; }
+@media (max-width: 900px) { .rcsfi-grid { grid-template-columns: minmax(0, 1fr); } }
+@media print {
+  .rcsfi-grid { display: block; }
+  .rcsfi-aci { border: 0; box-shadow: none; text-align: center; }
+  .rcsfi-qr img { width: 120mm; height: 120mm; border: 0; }
+}
+.journal-collab { margin: 8px 0 0; font-size: 13.5px; color: var(--ink-soft); display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap; }

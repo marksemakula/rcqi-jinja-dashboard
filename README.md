@@ -1,6 +1,6 @@
 # CQI Dashboard: MoH - Busoga RCQI
 
-Interactive dashboard for Continuous Quality Improvement (CQI) for MoH - Busoga RCQI, Busoga Region, Uganda. Data is collected through seven Google Forms that write to one master Google Sheet. A Google Apps Script data service publishes de-identified records to this Next.js dashboard, which is hosted on Vercel and deployed automatically from GitHub.
+Interactive dashboard for Continuous Quality Improvement (CQI) for MoH - Busoga RCQI, Busoga Region, Uganda. Data is collected through eight Google Forms that write to one master Google Sheet. The tools are open to every health facility in Busoga; the JRRH Public Health Department is the secretariat. A Google Apps Script data service publishes de-identified records to this Next.js dashboard, which is hosted on Vercel and deployed automatically from GitHub.
 
 ## Live links
 
@@ -13,6 +13,7 @@ Interactive dashboard for Continuous Quality Improvement (CQI) for MoH - Busoga 
 - IPC Facility Assessment Tool (MoH 2024): https://forms.gle/WmphR6YYddGHrzYq7
 - HFQAP Facility Assessment: https://forms.gle/hFs5hkFzZS7WtD398
 - QI Documentation Journal: https://forms.gle/BuXfJkM2TPcgZQ346
+- QI Collaborative Register: shown on the Forms and Data page once created (run `addMissingForms`, see below)
 
 The master sheet, the forms and the Apps Script project live in the "CQI Jinja RRH" folder of the CQI Google Drive account.
 
@@ -27,17 +28,19 @@ The master sheet, the forms and the Apps Script project live in the "CQI Jinja R
 | 5S-CQI-TQM | 5S Monitoring and Evaluation Sheet | 5S Monitoring and Evaluation |
 | Quality of care | MoH HFQAP Facility Assessment Tool | HFQAP Facility Assessment |
 | Quality improvement projects | Documentation Journal for QI activities | QI Documentation Journal |
+| QI collaboratives | Collaborative charter and status | QI Collaborative Register |
+| RCSFI | Links to the RCSFI dashboard and the Assisted Client Interview (ACI) form, with a QR code for the form | None (links set in `lib/rcsfi.ts`) |
 
 ## Home page
 
-The address root opens a landing page. The left half is a field of Continuous Quality Improvement terms set in blocks whose text runs in two crossing directions (the vocabulary is in `lib/cqi-words.ts`, laid out by a seeded generator so it is identical on every load). The right half carries the Uganda coat of arms, MINISTRY OF HEALTH and the hospital name, the programme title and a facility search over every DHIS2 facility in Busoga (`data/dhis2-busoga-facilities.json`): choose a district, then type part of a facility name. Open the dashboard goes to `/dashboard?district=<district>&facility=<facility>`; the dashboard keeps these two filters in its address, so a facility's view can be bookmarked. A facility with no entries yet is still applied and labelled as such. Older links to the root with a section, such as `/#journal/<project>` in notification emails or `/#forms`, are forwarded to the same section of `/dashboard`.
+The address root opens a landing page. The left half is a field of Continuous Quality Improvement terms set in blocks whose text runs in two crossing directions (the vocabulary is in `lib/cqi-words.ts`, laid out by a seeded generator so it is identical on every load). The right half carries the Uganda coat of arms, MINISTRY OF HEALTH, Busoga Region and its secretariat (the JRRH Public Health Department), the programme title and a facility search over every DHIS2 facility in Busoga (`data/dhis2-busoga-facilities.json`): choose a district, then type part of a facility name. Open the dashboard goes to `/dashboard?district=<district>&facility=<facility>`; the dashboard keeps these two filters in its address, so a facility's view can be bookmarked. A facility with no entries yet is still applied and labelled as such. Older links to the root with a section, such as `/#journal/<project>` in notification emails or `/#forms`, are forwarded to the same section of `/dashboard`.
 
 Every chart responds to the period, district, facility and department filters. The period can be a quick range (last 3, 6 or 12 months, this or last financial year, all time), a year with all months or one month, a financial year, or a range of months; the district list holds all 12 Busoga districts and the facility search every DHIS2 facility, with those that have entries marked. The period, district and facility are kept in the address. Charts support tooltips, cross-filtering (select a bar or cell), drill-down panels, chart or table views, CSV download and an expanded view.
 
 ## How the pieces fit together
 
 ```
-Google Forms (7) --> CQI Jinja RRH Master Database (Google Sheet, one tab per form)
+Google Forms (8) --> CQI Jinja RRH Master Database (Google Sheet, one tab per form)
                           |
                           v
             Apps Script data service (apps-script/Code.gs, deployed as a web app)
@@ -51,7 +54,7 @@ Free text in the six assessment and reporting forms (descriptions, causes, count
 ## First-time setup
 
 1. Open [script.google.com](https://script.google.com), create a new project named "CQI Jinja RRH" and paste `apps-script/Code.gs` and `apps-script/appsscript.json` (enable "Show appsscript.json" in Project Settings).
-2. Run `setupCQI`. Approve the permissions requested by Google. The script creates the "CQI Jinja RRH" Drive folder, the master sheet, the seven forms (with the Uganda coat of arms at the top), the HSR reference-number trigger and an API token. It also loads the DHIS2 facility list into a DHIS2 Facilities tab and creates the QI Notification List and QI Notification Log tabs.
+2. Run `setupCQI`. Approve the permissions requested by Google. The script creates the "CQI Jinja RRH" Drive folder, the master sheet, the eight forms (with the Uganda coat of arms at the top), the HSR reference-number trigger and an API token. It also loads the DHIS2 facility list into a DHIS2 Facilities tab and creates the QI Notification List and QI Notification Log tabs.
 3. Deploy the project: Deploy, New deployment, Web app, Execute as Me, Who has access Anyone. Copy the web app URL (it ends in `/exec`).
 4. Run `showLinks` and copy the value after `RCQI_API_TOKEN=` from the execution log.
 5. In Vercel, add the environment variables `RCQI_API_URL` (web app URL) and `RCQI_API_TOKEN` (token) for Production, then redeploy.
@@ -61,15 +64,19 @@ To add a new form to an existing installation (as was done for the QI Documentat
 
 To add new questions to a live form (as was done for the journal's team email list), paste the updated `Code.gs` and run `upgradeForms`. It adds only the missing questions and sections in their proper places, reapplies the branching, puts the coat of arms on every form and creates the notification tabs. Existing questions and responses are never changed, and it stops without changing anything if it cannot recognise most of a form's questions. Then publish a new version of the deployment as above.
 
+The review of 18 November 2026 was applied this way: paste the updated `Code.gs`, run `upgradeForms` (it adds the district and DHIS2 facility pages to the HSR and the collaborative question to the journal; run it again if the log says PAUSED), run `addMissingForms` (it creates the QI Collaborative Register, linked to the master sheet), apply the house theme to the new form (Ubuntu, army green), run `refreshCollaboratives` and `logDiagnostics`, then publish a new version of the deployment.
+
 Until the first submission arrives the dashboard shows clearly labelled demonstration data. It switches to live data automatically.
 
 ## Day-to-day use
 
 - Share the form links or print the QR codes from the Forms and Data page.
-- The QI Committee records follow-up on the HSR Reports tab using the columns Reference No., QI Review Status, QI Action Taken and Date Closed.
+- Patient safety reports come from any facility in Busoga: the HSR asks for the district, then the facility from DHIS2, before the report itself. The QI Committee records follow-up on the HSR Reports tab using the columns Reference No., QI Review Status, QI Action Taken and Date Closed. The Patient Safety page shows reports by facility, and the district and facility filters apply to it.
 - Do not rename tabs, reorder questions or edit question titles once data collection has started. Item codes such as `LD1.` or `ORG3.` must stay at the start of grid rows.
 - QI teams register each improvement project once in the QI Documentation Journal form, then record every change tested and each month's numerator and denominator against it. The project list in the form refreshes automatically after each registration. The QI Journal page shows each project's journal with its annotated run chart and prints on A4 landscape.
 - Facilities come from DHIS2: every facility form asks for the district first, then lists that district's facilities (all 599 open Busoga facilities, pulled from the DHIS2 test instance at hmis-tests.health.go.ug on 27 October 2026 and kept in `data/dhis2-busoga-facilities.json`). A facility missing from the list is typed on a "not in the list" page. On every submission the script fills the DHIS2 facility, DHIS2 district, DHIS2 UID and Facility match columns: a picked facility is recorded as selected, a typed name is matched to DHIS2 when the match is clear (abbreviations such as HC IV and small spelling slips are allowed, but a different level is not), and anything uncertain is marked "Please confirm" or "Not found". Coordinators resolve those by choosing the facility in the DHIS2 facility column (a drop-down of the DHIS2 Facilities tab); the dashboard always uses that column when it is filled, and the Forms and Data page lists the entries still to review.
+- QI collaboratives: the collaborative lead or the secretariat registers each collaborative once in the QI Collaborative Register (aim, lead, secretariat, status, dates, main indicator with numerator, denominator and target, participating facilities and a charter link) and records each later change, such as approval, as an update. Facility teams join by choosing the collaborative when they register their project in the QI Documentation Journal; the list of collaboratives in both forms refreshes after every register entry. The QI Collaboratives page shows each collaborative with its facilities, its projects (each opening the project's journal) and their monthly results against the target, pooled across projects.
+- RCSFI: the RCSFI page links to the RCSFI dashboard and the Assisted Client Interview (ACI) form, and shows a QR code that opens the ACI form (download or print it for facilities). The two addresses and the full name are set in `lib/rcsfi.ts`; only https addresses are used.
 - To refresh the facility list after DHIS2 changes, pull it again into `data/dhis2-busoga-facilities.json`, push, and run `upgradeForms`: it reloads the DHIS2 Facilities tab (keeping rows added by hand) and refreshes every district list.
 - QI Journal notifications: teams list their members' email addresses at registration and can add or remove addresses later with the "Update the team email list" option. After every journal entry (a new or updated registration, a change tested, monthly results or a team list update), each person on the project's team list and each active coordinator on the QI Notification List tab (Facility "All facilities" or the project's facility) receives one email with the coat of arms, the entry, the result against the target and a link that opens the project's journal. Every send is recorded on the QI Notification Log tab. A personal Gmail account can send to about 100 recipients a day; anything beyond that is logged as not sent. Run `sendTestNotification` to send yourself a sample.
 - To rotate the API token, run `rotateApiToken` and update `RCQI_API_TOKEN` on Vercel.

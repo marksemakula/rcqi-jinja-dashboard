@@ -59,7 +59,8 @@ var LISTS = {
   ynna: ['Yes', 'No', 'N/A'],
   score03: ['0', '1', '2', '3'],
   hsrStatus: ['Pending review', 'Follow up required by the department', 'Support required by the QI committee',
-    'Resolved']
+    'Resolved'],
+  collabStatus: ['Being developed', 'Awaiting approval', 'Approved', 'Active', 'Completed', 'Closed']
 };
 
 /* ------------------------------------------------------------------------ */
@@ -71,6 +72,10 @@ function rows_(list) {
 }
 
 var NOT_LISTED_ = 'My facility is not in this list';
+/** The first choice of the collaborative question on QI project registration. */
+var NOT_IN_COLLAB_ = 'Not part of a collaborative';
+/** The placeholder of the update list in the QI Collaborative Register before any collaborative is registered. */
+var NO_COLLABS_ = 'No collaboratives registered yet';
 var BUSOGA_ = LISTS.districts.filter(function (d) { return !/^Other/.test(d); });
 
 function slug_(s) { return String(s).toLowerCase().replace(/[^a-z0-9]+/g, '_'); }
@@ -135,13 +140,17 @@ var FORM_DEFS = [
       'observed or were involved in. Reports are reviewed by the Quality Improvement Committee to strengthen systems, ' +
       'not to apportion blame. Please do not enter patient names, hospital numbers or the names of colleagues.',
     confirmation: 'Thank you. Your report has been received by the Quality Improvement Committee. Safety is everyone\'s responsibility.',
+    // Open to every facility in Busoga (review of 18 Nov 2026): district first, then the facility from DHIS2.
+    facilityMapped: true,
     extras: [
       { header: 'Reference No.', key: 'ref' },
       { header: 'QI Review Status', key: 'status' },
       { header: 'QI Action Taken', key: 'action', exportField: false },
       { header: 'Date Closed', key: 'closed', kind: 'date' }
-    ],
-    items: [
+    ].concat(FACILITY_EXTRAS_),
+    items: withFacilityPages_([].concat(facilityBlock_(), [
+      { type: 'section', key: 'sec_hsr_report', title: 'Your report',
+        help: 'Tell us about the near miss or adverse event. Please do not enter patient names, hospital numbers or the names of colleagues.' },
       { type: 'mc', key: 'cadre', title: 'Your cadre', required: true, help: 'Please select one.',
         options: ['Medical doctor', 'Nurse/Midwife', 'Pharmacist', 'Allied health professional', 'Intern/Trainee',
           'Administrative staff', 'Engineer or workshop staff', 'Support staff'] },
@@ -174,7 +183,7 @@ var FORM_DEFS = [
         help: 'What do you think caused the near miss or incident? Why did it occur?' },
       { type: 'paragraph', key: 'countermeasures', title: 'Countermeasures', required: false,
         help: 'What should be done to prevent a recurrence? Have you already taken any countermeasures? (if any)' }
-    ]
+    ]))
   },
 
   /* 2. 5S monitoring and evaluation ------------------------------------ */
@@ -758,6 +767,8 @@ var FORM_DEFS = [
       { type: 'section', key: 'sec_reg_details', title: 'Project details',
         help: 'Journal header and Part 1: the team, the improvement objective, its indicator and the problem being addressed.' },
       { type: 'mc', key: 'department', title: 'Department or unit (for hospital projects)', required: false, options: LISTS.departments, other: true },
+      { type: 'dropdown', key: 'collaborative', dynamic: 'collaboratives', title: 'Is this project part of a QI collaborative?', required: false, options: [NOT_IN_COLLAB_],
+        help: 'Choose the collaborative if this project works on its shared aim, so its monthly results are shown with the other facilities in the collaborative. The list comes from the QI Collaborative Register.' },
       { type: 'text', key: 'projectTitle', exportField: true, title: 'Short project title', required: true,
         help: 'For example: Reduce hypothermia on admission to NICU. Teams choose this title when recording changes and monthly results, so please keep it unique within the facility.' },
       { type: 'text', key: 'teamLeader', title: 'Team leader', required: true },
@@ -797,6 +808,52 @@ var FORM_DEFS = [
       { type: 'paragraph', key: 'emailsAdd', emails: true, title: 'Email addresses to add', required: false, help: 'One address per line, or separated by commas.' },
       { type: 'paragraph', key: 'emailsRemove', emails: true, title: 'Email addresses to remove', required: false, help: 'These people stop receiving notifications for this project.' }
     ])
+  },
+
+  /* 8. QI collaboratives (review of 18 Nov 2026) ----------------------- */
+  {
+    key: 'collab',
+    tab: 'QI Collaboratives',
+    short: 'QI Collaborative Register',
+    title: 'QI Collaborative Register: MoH - Busoga RCQI',
+    description: 'Register a quality improvement collaborative, where several facilities work together on one shared aim and ' +
+      'set of measures (for example the Medicines Availability Collaborative), or record a change in its status. Facility ' +
+      'teams then register their own projects in the QI Documentation Journal and choose the collaborative there, so ' +
+      'their monthly results are shown together on the dashboard. The name, aim, lead, coordinating team, indicator, ' +
+      'participating facilities, notes and charter link are shown on the CQI dashboard.',
+    confirmation: 'Thank you. The collaborative has been recorded for the CQI dashboard.',
+    items: [
+      { type: 'mc', key: 'entryType', title: 'What would you like to record?', required: true,
+        options: ['Register a new collaborative', 'Update a collaborative'], routes: ['sec_col_reg', 'sec_col_upd'],
+        help: 'Register each collaborative once. Record later changes, such as its approval, as an update.' },
+      { type: 'section', key: 'sec_col_reg', title: 'Register a collaborative',
+        help: 'The collaborative\'s charter: what it will improve, who leads it and how progress is measured.' },
+      { type: 'text', key: 'name', exportField: true, title: 'Name of the collaborative', required: true,
+        help: 'For example: Medicines Availability Collaborative. Facility teams choose this name when registering their projects.' },
+      { type: 'paragraph', key: 'aim', exportField: true, title: 'Aim statement', required: true,
+        help: 'What the collaborative will improve, by how much, where and by when.' },
+      { type: 'text', key: 'lead', exportField: true, title: 'Collaborative lead', required: true, help: 'Name and title of the person leading the collaborative.' },
+      { type: 'text', key: 'secretariat', exportField: true, title: 'Coordinating team or secretariat', required: false, help: 'The team or office that coordinates the collaborative and keeps its records.' },
+      { type: 'dropdown', key: 'status', title: 'Status', required: true, options: LISTS.collabStatus },
+      { type: 'date', key: 'startDate', title: 'Start date', required: false },
+      { type: 'date', key: 'endDate', title: 'Planned end date', required: false },
+      { type: 'text', key: 'indicator', exportField: true, title: 'Main indicator', required: true,
+        help: 'The shared measure every participating facility reports in its QI Documentation Journal project.' },
+      { type: 'text', key: 'numeratorDef', exportField: true, title: 'Numerator: what is counted', required: false },
+      { type: 'text', key: 'denominatorDef', exportField: true, title: 'Denominator: counted out of what', required: false },
+      { type: 'number', key: 'target', title: 'Target for the indicator (%)', required: false, min: 0, max: 100 },
+      { type: 'paragraph', key: 'plannedFacilities', exportField: true, title: 'Participating facilities', required: false,
+        help: 'One facility per line, as named in DHIS2. Facilities also join when a QI project is registered under the collaborative.' },
+      { type: 'text', key: 'charter', exportField: true, title: 'Link to the charter or change package', required: false,
+        help: 'Optional. A Google Drive or website link that collaborative members can open.' },
+      { type: 'section', key: 'sec_col_upd', goTo: 'SUBMIT', title: 'Update a collaborative',
+        help: 'Record a change in status, such as approval, start or completion, with a short note.' },
+      { type: 'dropdown', key: 'collaborative', dynamic: 'collaboratives', title: 'Which collaborative is this update for?', required: true, options: [NO_COLLABS_] },
+      { type: 'dropdown', key: 'newStatus', title: 'New status', required: true, options: LISTS.collabStatus },
+      { type: 'paragraph', key: 'updateNotes', exportField: true, title: 'Notes on the update', required: false,
+        help: 'For example: approved by the Regional QI Committee, with any changes to its aim or measures.' },
+      { type: 'text', key: 'newCharter', exportField: true, title: 'New link to the charter or change package', required: false, help: 'Only if the link has changed.' }
+    ]
   }
 ];
 
@@ -805,7 +862,7 @@ var FORM_DEFS = [
 /* ------------------------------------------------------------------------ */
 
 /**
- * Creates the folder, the master spreadsheet, the seven forms and the trigger.
+ * Creates the folder, the master spreadsheet, every form and the trigger.
  * Safe to run twice: a second run only prints the existing links.
  */
 function setupCQI() {
@@ -1093,8 +1150,9 @@ function writeReadMe_(ss, links) {
     ['CQI Jinja RRH Master Database', ''],
     ['Purpose', 'Single source for the Continuous Quality Improvement (CQI) dashboard of ' + RCQI.brand + '.'],
     ['Important', 'Do not rename tabs, reorder form questions or edit question titles once data collection has started. The dashboard reads columns by their titles and item codes.'],
-    ['HSR follow-up', 'The QI Committee updates the columns Reference No., QI Review Status, QI Action Taken and Date Closed on the HSR Reports tab. New reports receive a reference number automatically.'],
-    ['Privacy', 'Free text from the HSR and the assessment forms (descriptions, causes, comments), all names, phone numbers and email addresses stay in this sheet and are never sent to the dashboard. QI Journal narratives (objective, problem, changes and notes) are published on the dashboard QI Journal page; team names and email addresses are not.'],
+    ['HSR follow-up', 'Any facility in Busoga can report: the HSR asks for the district and the DHIS2 facility first, and the DHIS2 columns on the HSR Reports tab record it. The QI Committee updates the columns Reference No., QI Review Status, QI Action Taken and Date Closed. New reports receive a reference number automatically.'],
+    ['Privacy', 'Free text from the HSR and the assessment forms (descriptions, causes, comments), all names, phone numbers and email addresses stay in this sheet and are never sent to the dashboard. QI Journal narratives (objective, problem, changes and notes) are published on the dashboard QI Journal page; team names and email addresses are not. Entries in the QI Collaborative Register, including the name of the collaborative lead, are published on the QI Collaboratives page.'],
+    ['QI collaboratives', 'Each collaborative is registered once in the QI Collaborative Register (the QI Collaboratives tab) and its later changes, such as approval, are recorded as updates. Registering one adds it at once to the collaborative question on QI project registration in the QI Journal; run refreshCollaboratives to rebuild the lists by hand.'],
     ['QI Journal notifications', 'Every QI Journal entry emails the project\'s team list (addresses from the registration and from any "Update the team email list" entries) and each person on the ' + RCQI.notifyTab + ' tab whose Active column is Yes and whose Facility is "All facilities" or the project\'s facility. Every send is recorded on the ' + RCQI.notifyLogTab + ' tab. A personal Gmail account can send to about 100 recipients a day.'],
     ['DHIS2 facilities', 'Facility forms ask for the district first, then list that district\'s facilities from the ' + RCQI.facilitiesTab + ' tab (pulled from the DHIS2 test instance). On each submission the DHIS2 facility, DHIS2 district, DHIS2 UID and Facility match columns are filled. Names typed on the "not in the list" page are matched automatically; any marked "Please confirm" or "Not found" are corrected by choosing the facility in the DHIS2 facility column. The dashboard always uses that column when it is filled.'],
     ['', ''],
@@ -1139,6 +1197,10 @@ function onRcqiFormSubmit(e) {
   if (tabDef && tabDef.facilityMapped) {
     try { writeFacilityMapping_(sheet, e.range.getRow(), tabDef, facilityDirectory_(sheet.getParent())); } catch (err) { Logger.log('Facility mapping failed: ' + err); }
   }
+  if (sheet.getName() === 'QI Collaboratives') {
+    try { refreshCollaboratives(); } catch (err) { Logger.log('Collaborative lists not refreshed: ' + err); }
+    return;
+  }
   if (sheet.getName() === 'QI Journal') {
     try { refreshJournalProjects(); } catch (err) { Logger.log('Project list not refreshed: ' + err); }
     try { notifyJournalEntry_(sheet, e.range.getRow()); } catch (err) { Logger.log('Notification failed: ' + err); }
@@ -1165,6 +1227,46 @@ function onRcqiFormSubmit(e) {
   } finally {
     lock.releaseLock();
   }
+}
+
+/** The names of the registered collaboratives, in alphabetical order (a name registered again keeps one entry). */
+function collaborativeNames_(records) {
+  var names = [];
+  records.forEach(function (r) {
+    if (String(r.entryType || '').indexOf('Register') !== 0) return;
+    var n = String(r.name || '').trim();
+    if (n && names.map(function (x) { return x.toLowerCase(); }).indexOf(n.toLowerCase()) === -1) names.push(n);
+  });
+  return names.sort(function (a, b) { return a.toLowerCase() < b.toLowerCase() ? -1 : a.toLowerCase() > b.toLowerCase() ? 1 : 0; });
+}
+
+/** Sets the choices of every list marked dynamic: 'collaboratives' in a form. */
+function setCollaborativeChoices_(form, def, names) {
+  var lists = form.getItems(FormApp.ItemType.LIST);
+  def.items.forEach(function (it) {
+    if (it.dynamic !== 'collaboratives') return;
+    var choices = def.key === 'qij' ? [NOT_IN_COLLAB_].concat(names) : (names.length ? names : [NO_COLLABS_]);
+    lists.forEach(function (item) { if (item.getTitle() === it.title) item.asListItem().setChoiceValues(choices); });
+  });
+}
+
+/**
+ * Refreshes the collaborative lists: the question on QI project registration in the journal and the update list in the
+ * QI Collaborative Register. Runs after each register entry, after upgradeForms, and can be run by hand.
+ */
+function refreshCollaboratives() {
+  var props = PropertiesService.getScriptProperties();
+  var links = JSON.parse(props.getProperty('FORM_LINKS') || '{}');
+  var def = FORM_DEFS.filter(function (d) { return d.key === 'collab'; })[0];
+  var ss = SpreadsheetApp.openById(props.getProperty('SPREADSHEET_ID'));
+  var sheet = ss.getSheetByName(def.tab);
+  var values = sheet ? sheet.getDataRange().getValues() : [[]];
+  var names = collaborativeNames_(parseValues_(def, values, RCQI.timezone).records);
+  ['qij', 'collab'].forEach(function (key) {
+    var d = FORM_DEFS.filter(function (x) { return x.key === key; })[0];
+    if (links[key]) setCollaborativeChoices_(FormApp.openById(links[key].id), d, names);
+  });
+  Logger.log('Collaboratives: ' + names.length + (names.length ? ' (' + names.join('; ') + ')' : ''));
 }
 
 /** The label teams pick for a registered project: "Facility: Short project title". */
@@ -1537,11 +1639,11 @@ function applyFormNames() {
 }
 
 /** Changes when the form definitions change, so upgradeForms knows which forms are already up to date. */
-var UPGRADE_VERSION = '2026-10-27 DHIS2 facility lists and CQI names';
+var UPGRADE_VERSION = '2026-11-18 HSR facility pages and collaboratives';
 var UPGRADE_BUDGET_MS = 4 * 60 * 1000;
 
-/** Forms that upgradeForms() may change. Other forms (the HSR) are left exactly as they are. */
-var FORM_UPGRADE_KEYS = ['fives', 'hh', 'ipcBasic', 'ipcMoh', 'hfqap', 'qij'];
+/** Forms that upgradeForms() may change in place (the QI Collaborative Register is new, so addMissingForms creates it). */
+var FORM_UPGRADE_KEYS = ['hsr', 'fives', 'hh', 'ipcBasic', 'ipcMoh', 'hfqap', 'qij'];
 
 var ITEM_TYPE_FOR_ = {
   section: 'PAGE_BREAK', mc: 'MULTIPLE_CHOICE', checkbox: 'CHECKBOX', dropdown: 'LIST', text: 'TEXT',
@@ -1658,6 +1760,7 @@ function upgradeForms() {
   setupNotifications();
   applyNames_(ss, links);
   refreshJournalProjects();
+  refreshCollaboratives();
   writeReadMe_(ss, links);
   CacheService.getScriptCache().remove('payload');
   Logger.log('UPGRADE COMPLETE');
@@ -1999,7 +2102,7 @@ function sendTestNotification() {
 
 /** Health check only. Data is served by doPost so that the token never travels in a URL. */
 function doGet() {
-  return json_({ ok: true, service: 'CQI Jinja RRH data service', schema: RCQI.schema, data: 'POST a JSON body {"token": "..."} to read records' });
+  return json_({ ok: true, service: 'CQI data service, ' + RCQI.brand, schema: RCQI.schema, data: 'POST a JSON body {"token": "..."} to read records' });
 }
 
 /** Returns all de-identified records. Body: {"token": "...", "diag": false}. */

@@ -124,7 +124,9 @@ export function filterDataset(data: Dataset, f: Filters, today = new Date()): Da
     ipcMoh: applyFilters(data.ipcMoh, f, undefined, today),
     hfqap: applyFilters(data.hfqap, f, undefined, today),
     // Journal entries are filtered at project level on the QI Journal page, so every month stays in each journal.
-    qij: data.qij
+    qij: data.qij,
+    // A collaborative spans several facilities: its facilities and projects are narrowed on the Collaboratives page.
+    collab: data.collab
   };
 }
 
@@ -148,7 +150,7 @@ export function optionsFrom(data: Dataset) {
   return { districts: sort(districts), facilities: sort(facilities), departments: sort(departments), facilityDistricts };
 }
 
-export const emptyDataset = (): Dataset => ({ hsr: [], fives: [], hh: [], ipcBasic: [], ipcMoh: [], hfqap: [], qij: [] });
+export const emptyDataset = (): Dataset => ({ hsr: [], fives: [], hh: [], ipcBasic: [], ipcMoh: [], hfqap: [], qij: [], collab: [] });
 
 export function normaliseDataset(data?: Partial<Dataset>): Dataset {
   const e = emptyDataset();
@@ -156,12 +158,12 @@ export function normaliseDataset(data?: Partial<Dataset>): Dataset {
   const fix = <T extends BaseRec>(rows?: T[]) => (rows || []).map((r) => ({ ...r, items: r.items || {}, facility: r.facility ? r.facility.trim() : r.facility }));
   return {
     hsr: fix(data.hsr), fives: fix(data.fives), hh: fix(data.hh),
-    ipcBasic: fix(data.ipcBasic), ipcMoh: fix(data.ipcMoh), hfqap: fix(data.hfqap), qij: fix(data.qij)
+    ipcBasic: fix(data.ipcBasic), ipcMoh: fix(data.ipcMoh), hfqap: fix(data.hfqap), qij: fix(data.qij), collab: fix(data.collab)
   };
 }
 
 export const datasetSize = (d: Dataset) =>
-  d.hsr.length + d.fives.length + d.hh.length + d.ipcBasic.length + d.ipcMoh.length + d.hfqap.length + d.qij.length;
+  d.hsr.length + d.fives.length + d.hh.length + d.ipcBasic.length + d.ipcMoh.length + d.hfqap.length + d.qij.length + d.collab.length;
 
 const fromAddress = (v: string | null) => {
   const t = (v || '').trim();

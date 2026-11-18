@@ -1,6 +1,6 @@
-export type FormKey = 'hsr' | 'fives' | 'hh' | 'ipcBasic' | 'ipcMoh' | 'hfqap' | 'qij';
+export type FormKey = 'hsr' | 'fives' | 'hh' | 'ipcBasic' | 'ipcMoh' | 'hfqap' | 'qij' | 'collab';
 
-export const FORM_KEYS: FormKey[] = ['hsr', 'fives', 'hh', 'ipcBasic', 'ipcMoh', 'hfqap', 'qij'];
+export const FORM_KEYS: FormKey[] = ['hsr', 'fives', 'hh', 'ipcBasic', 'ipcMoh', 'hfqap', 'qij', 'collab'];
 
 export interface BaseRec {
   id: string;
@@ -128,6 +128,30 @@ export interface QijRec extends BaseRec {
   denominator?: number | null;
   indicatorNotes?: string | null;
   effects?: string | null;
+  /** The QI collaborative the project belongs to, chosen at registration ("Not part of a collaborative" when none). */
+  collaborative?: string | null;
+}
+
+/** One entry in the QI Collaborative Register: a collaborative registered, or an update to its status. */
+export interface CollabRec extends BaseRec {
+  entryType?: string | null;
+  name?: string | null;
+  aim?: string | null;
+  lead?: string | null;
+  secretariat?: string | null;
+  status?: string | null;
+  startDate?: string | null;
+  endDate?: string | null;
+  indicator?: string | null;
+  numeratorDef?: string | null;
+  denominatorDef?: string | null;
+  target?: number | null;
+  plannedFacilities?: string | null;
+  charter?: string | null;
+  collaborative?: string | null;
+  newStatus?: string | null;
+  updateNotes?: string | null;
+  newCharter?: string | null;
 }
 
 export interface FormMeta {
@@ -146,6 +170,7 @@ export interface Dataset {
   ipcMoh: IpcMohRec[];
   hfqap: HfqapRec[];
   qij: QijRec[];
+  collab: CollabRec[];
 }
 
 export interface Payload {

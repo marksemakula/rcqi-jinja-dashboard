@@ -9,13 +9,14 @@ import { palette } from '@/lib/palette';
 import { FORM_KEYS, type BaseRec, type FacilityMatch, type FormKey } from '@/lib/types';
 
 const ABOUT: Record<FormKey, { name: string; who: string; when: string; text: string }> = {
-  hsr: { name: 'Patient Safety Report (HSR)', who: 'Any member of staff', when: 'Whenever a near miss or adverse event occurs', text: 'Captures near misses and adverse events: cadre, department, date and timeframe, location, who was harmed, category, type of event and outcome. Descriptions stay in the master sheet.' },
+  hsr: { name: 'Patient Safety Report (HSR)', who: 'Any member of staff at any health facility in Busoga', when: 'Whenever a near miss or adverse event occurs', text: 'Captures near misses and adverse events: the facility (district first, then the DHIS2 list), cadre, department, date and timeframe, location, who was harmed, category, type of event and outcome. Descriptions stay in the master sheet.' },
   fives: { name: '5S Monitoring and Evaluation', who: 'Work Improvement Teams and QI focal persons', when: 'Quarterly per department or unit', text: 'Eighteen items scored 0 to 3 across Leadership, Sort, Set, Shine and Standardise (maximum 54).' },
   hh: { name: 'Hand Hygiene Observation', who: 'Trained IPC observers', when: 'At least monthly per ward', text: 'Totals from a WHO five moments observation session for one professional category, with optional moment breakdown.' },
   ipcBasic: { name: 'Basic IPC Assessment', who: 'IPC focal persons and supervisors', when: 'Quarterly per facility', text: 'Seventy-seven Yes or No items across twelve standards, each rated Red, Amber or Green, with an overall RAG rating.' },
   ipcMoh: { name: 'IPC Facility Assessment Tool (MoH 2024)', who: 'Facility IPC team or external assessors', when: 'Quarterly per facility', text: 'Eight thematic areas from IPC programme to built environment, including PPE availability, waste management and device processing.' },
   hfqap: { name: 'HFQAP Facility Assessment', who: 'District and regional supervisors', when: 'Quarterly or at each assessment round', text: 'Module scores from the MoH HFQAP Facility Assessment Tool and the standards not met, giving the overall percentage and star rating.' },
-  qij: { name: 'QI Documentation Journal', who: 'QI teams and work improvement teams', when: 'Register once; record each change and every month', text: 'The online Documentation Journal for QI activities: project header and Part 1, the changes worksheet (Part 2), monthly numerator and denominator (Part 3) and the team email list for notifications.' }
+  qij: { name: 'QI Documentation Journal', who: 'QI teams and work improvement teams', when: 'Register once; record each change and every month', text: 'The online Documentation Journal for QI activities: project header and Part 1 (including the QI collaborative, if any), the changes worksheet (Part 2), monthly numerator and denominator (Part 3) and the team email list for notifications.' },
+  collab: { name: 'QI Collaborative Register', who: 'Collaborative leads and the regional CQI secretariat', when: 'Register once; record each change in status', text: 'Registers a QI collaborative, where several facilities work on one shared aim and indicator: aim, lead, secretariat, status, dates, main indicator with numerator, denominator and target, participating facilities and the charter link. Updates record approval, start and completion.' }
 };
 
 const METHODS = [
@@ -68,7 +69,7 @@ const MATCH_LABEL: Record<FacilityMatch, string> = {
   selected: 'Picked from the DHIS2 list', matched: 'Typed name matched', confirmed: 'Confirmed by a coordinator',
   review: 'Needs review', unmatched: 'Not in the DHIS2 list'
 };
-const FACILITY_FORMS: FormKey[] = ['fives', 'hh', 'ipcBasic', 'ipcMoh', 'hfqap', 'qij'];
+const FACILITY_FORMS: FormKey[] = ['hsr', 'fives', 'hh', 'ipcBasic', 'ipcMoh', 'hfqap', 'qij'];
 
 /** How each entry's facility was matched to DHIS2, and the entries a coordinator still needs to resolve. */
 function FacilityReview({ all }: { all: TabProps['all'] }) {

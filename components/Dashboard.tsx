@@ -11,6 +11,8 @@ import FiveS from './tabs/FiveS';
 import Hfqap from './tabs/Hfqap';
 import Forms from './tabs/Forms';
 import Journal from './tabs/Journal';
+import Collaboratives from './tabs/Collaboratives';
+import Rcsfi from './tabs/Rcsfi';
 import { TABS, type TabId, type TabProps } from './tabs/shared';
 import { Select } from './ui';
 import FacilitySearch from './FacilitySearch';
@@ -28,6 +30,8 @@ const ICONS: Record<TabId, string> = {
   fives: 'M3 4h14M3 8h10M3 12h14M3 16h8',
   hfqap: 'M10 2l2.4 5 5.6.8-4 3.9.9 5.5L10 14.6l-4.9 2.6.9-5.5-4-3.9 5.6-.8z',
   journal: 'M4 2h11v16H4zM7 2v16M10 6h3M10 9h3',
+  collaboratives: 'M3 4h5v5H3zm9 0h5v5h-5zM7.5 12h5v5h-5zM8 6.5h4M5.5 9l3 3M14.5 9l-3 3',
+  rcsfi: 'M3 3h5v5H3zm9 0h5v5h-5zM3 12h5v5H3zm9 0h2v2h-2zm3 3h2v2h-2zm-3 0v2m5-5v2',
   forms: 'M5 2h7l4 4v12H5zm7 0v4h4M8 10h5M8 13h5'
 };
 
@@ -146,7 +150,7 @@ export default function Dashboard({ directory = [], busoga = [] }: { directory?:
   // Entries for the chosen facility in the selected period (journal projects count at project level).
   const facilityEntries = useMemo(() => {
     if (filters.facility === ALL) return null;
-    return datasetSize({ ...filtered, qij: [] }) + filterProjects(buildJournal(dataset.qij), filters).length;
+    return datasetSize({ ...filtered, qij: [], collab: [] }) + filterProjects(buildJournal(dataset.qij), filters).length;
   }, [filtered, dataset, filters]);
 
   const go = useCallback((t: TabId, f?: string) => {
@@ -159,7 +163,7 @@ export default function Dashboard({ directory = [], busoga = [] }: { directory?:
     }
   }, []);
 
-  const props: TabProps = { data: filtered, all: dataset, filters, forms: payload?.forms || {}, mode, go, focus, generatedAt: payload?.generatedAt || null };
+  const props: TabProps = { data: filtered, all: dataset, filters, forms: payload?.forms || {}, mode, go, focus, generatedAt: payload?.generatedAt || null, directory };
   const setF = (patch: Partial<Filters>) => setFilters((f) => ({ ...f, ...patch }));
   const setPeriod = (p: Preset) => setF({ preset: p, ...(p === filters.preset ? {} : periodDefaults(p)) });
   const changed = filters.preset !== DEFAULT_FILTERS.preset || filters.district !== ALL || filters.facility !== ALL || filters.department !== ALL;
@@ -175,7 +179,7 @@ export default function Dashboard({ directory = [], busoga = [] }: { directory?:
     }
   }
 
-  const ActiveTab = { overview: Overview, safety: Safety, hand: HandHygiene, ipc: Ipc, fives: FiveS, hfqap: Hfqap, journal: Journal, forms: Forms }[tab];
+  const ActiveTab = { overview: Overview, safety: Safety, hand: HandHygiene, ipc: Ipc, fives: FiveS, hfqap: Hfqap, journal: Journal, collaboratives: Collaboratives, rcsfi: Rcsfi, forms: Forms }[tab];
   const updated = payload?.generatedAt ? new Date(payload.generatedAt).toLocaleTimeString('en-GB', { timeZone: 'Africa/Kampala', hour: '2-digit', minute: '2-digit' }) : null;
 
   return (
