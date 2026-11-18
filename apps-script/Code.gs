@@ -60,7 +60,10 @@ var LISTS = {
   score03: ['0', '1', '2', '3'],
   hsrStatus: ['Pending review', 'Follow up required by the department', 'Support required by the QI committee',
     'Resolved'],
-  collabStatus: ['Being developed', 'Awaiting approval', 'Approved', 'Active', 'Completed', 'Closed']
+  collabStatus: ['Being developed', 'Awaiting approval', 'Approved', 'Active', 'Completed', 'Closed'],
+  // MoH Routine Client Satisfaction Feedback tool (Implementation Guidelines, Appendix 1).
+  aciUnits: ['OPD', 'Medical ward', 'Maternity', 'Antenatal', 'EPI/YCC/Postnatal', 'Surgical ward', 'ART', 'Community services'],
+  aciScale: ['Excellent', 'Good', 'Fair', 'Poor']
 };
 
 /* ------------------------------------------------------------------------ */
@@ -854,6 +857,50 @@ var FORM_DEFS = [
         help: 'For example: approved by the Regional QI Committee, with any changes to its aim or measures.' },
       { type: 'text', key: 'newCharter', exportField: true, title: 'New link to the charter or change package', required: false, help: 'Only if the link has changed.' }
     ]
+  },
+
+  /* 9. Routine Client Satisfaction Feedback: Assisted Client Interview ---- */
+  {
+    key: 'aci',
+    tab: 'RCSF Client Interviews',
+    short: 'Assisted Client Interview (ACI)',
+    title: 'Assisted Client Interview (ACI): MoH - Busoga RCQI',
+    description: 'Routine Client Satisfaction Feedback Initiative. The Ministry of Health client satisfaction feedback tool ' +
+      '(Routine Client Satisfaction Feedback Implementation Guidelines, Appendix 1), asked by the facility focal person. ' +
+      'Interview each client individually and in private after the service. Tell the client that taking part is voluntary, ' +
+      'that the feedback is confidential and looked at together with other clients\' answers, and that it will not affect ' +
+      'the care they receive. Do not interview clients in a critical condition, clients who cannot hold a conversation or ' +
+      'anyone who declines. Do not record the client\'s name, phone number or anything else that identifies them.',
+    confirmation: 'Thank you. The client\'s feedback has been recorded.',
+    facilityMapped: true,
+    extras: FACILITY_EXTRAS_,
+    items: withFacilityPages_([].concat(facilityBlock_(), [
+      { type: 'section', key: 'sec_aci_client', title: 'The client and the service',
+        help: 'The date of the interview gives the reporting month.' },
+      { type: 'date', key: 'date', title: 'Date of the interview', required: true },
+      { type: 'mc', key: 'serviceUnit', title: 'Service unit where the client was served', required: true, options: LISTS.aciUnits, other: true },
+      { type: 'number', key: 'age', title: 'Age of the client in complete years', required: true, min: 0, max: 120 },
+      { type: 'mc', key: 'sex', title: 'Sex of the client', required: true, options: ['Male', 'Female'] },
+      { type: 'section', key: 'sec_aci_feedback', title: 'The client\'s feedback',
+        help: 'Read each question to the client and record the answer the client gives.' },
+      { type: 'grid', key: 'g_aci', title: 'Q1. How would you rate the following at this health facility today?', required: true,
+        columns: LISTS.aciScale, rows: rows_([
+          ['Q1a', 'Cleanliness of the health facility'],
+          ['Q1b', 'Timeliness of the services (waiting time)'],
+          ['Q1c', 'Privacy during the services'],
+          ['Q1d', 'Respect shown to you by the health workers'],
+          ['Q1e', 'Availability of the medicines you needed'],
+          ['Q1f', 'Receiving all the services you needed'],
+          ['Q1g', 'Availability of health workers'],
+          ['Q1h', 'Access to health information about your condition']
+        ]) },
+      { type: 'mc', key: 'cost', title: 'Q1i. How was the cost of the services you received?', required: true, options: ['Free', 'Affordable', 'Not affordable'] },
+      { type: 'mc', key: 'bribe', title: 'Q2. Did you pay any money for which you were not given a receipt (which could be considered a bribe)?', required: true, options: ['Yes', 'No'] },
+      { type: 'mc', key: 'informed', title: 'Q3. Were you told about the services you received, and was your permission asked before they were given?', required: true, options: ['Yes', 'No'] },
+      { type: 'mc', key: 'overall', title: 'Q4. Overall, are you satisfied with the services you received today?', required: true, options: ['Yes', 'No'] },
+      { type: 'paragraph', key: 'improve', title: 'Q5. Mention one area this health facility should improve.', required: false,
+        help: 'In the client\'s own words. Kept in the master sheet for the facility team; not shown on the dashboard.' }
+    ]))
   }
 ];
 

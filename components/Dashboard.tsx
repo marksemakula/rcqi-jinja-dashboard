@@ -139,7 +139,7 @@ export default function Dashboard({ directory = [], busoga = [] }: { directory?:
   }, [directory, opts, filters.district, filters.facility]);
   const selectedFacilityId = useMemo(() => facilityOptions.find((o) => o.name === filters.facility && (filters.district === ALL || o.district === filters.district))?.id, [facilityOptions, filters.facility, filters.district]);
   // Years and months offered by the period controls.
-  const years = useMemo(() => periodYears([...dataset.hsr, ...dataset.fives, ...dataset.hh, ...dataset.ipcBasic, ...dataset.ipcMoh, ...dataset.hfqap, ...dataset.qij].map((r) => r.date || r.ts)), [dataset]);
+  const years = useMemo(() => periodYears([...dataset.hsr, ...dataset.fives, ...dataset.hh, ...dataset.ipcBasic, ...dataset.ipcMoh, ...dataset.hfqap, ...dataset.qij, ...dataset.aci].map((r) => r.date || r.ts)), [dataset]);
   const months = useMemo(() => periodMonths(years), [years]);
   const fyStarts = useMemo(() => {
     const out: number[] = [];

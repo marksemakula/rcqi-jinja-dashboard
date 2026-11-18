@@ -126,7 +126,8 @@ export function filterDataset(data: Dataset, f: Filters, today = new Date()): Da
     // Journal entries are filtered at project level on the QI Journal page, so every month stays in each journal.
     qij: data.qij,
     // A collaborative spans several facilities: its facilities and projects are narrowed on the Collaboratives page.
-    collab: data.collab
+    collab: data.collab,
+    aci: applyFilters(data.aci, f, undefined, today)
   };
 }
 
@@ -134,7 +135,7 @@ export function optionsFrom(data: Dataset) {
   const districts = new Set<string>();
   const facilities = new Set<string>();
   const departments = new Set<string>();
-  const all: BaseRec[] = [...data.hsr, ...data.fives, ...data.hh, ...data.ipcBasic, ...data.ipcMoh, ...data.hfqap, ...data.qij];
+  const all: BaseRec[] = [...data.hsr, ...data.fives, ...data.hh, ...data.ipcBasic, ...data.ipcMoh, ...data.hfqap, ...data.qij, ...data.aci];
   for (const r of all) {
     if (r.district) districts.add(r.district);
     if (r.facility) facilities.add(r.facility);
@@ -150,7 +151,7 @@ export function optionsFrom(data: Dataset) {
   return { districts: sort(districts), facilities: sort(facilities), departments: sort(departments), facilityDistricts };
 }
 
-export const emptyDataset = (): Dataset => ({ hsr: [], fives: [], hh: [], ipcBasic: [], ipcMoh: [], hfqap: [], qij: [], collab: [] });
+export const emptyDataset = (): Dataset => ({ hsr: [], fives: [], hh: [], ipcBasic: [], ipcMoh: [], hfqap: [], qij: [], collab: [], aci: [] });
 
 export function normaliseDataset(data?: Partial<Dataset>): Dataset {
   const e = emptyDataset();
@@ -158,12 +159,12 @@ export function normaliseDataset(data?: Partial<Dataset>): Dataset {
   const fix = <T extends BaseRec>(rows?: T[]) => (rows || []).map((r) => ({ ...r, items: r.items || {}, facility: r.facility ? r.facility.trim() : r.facility }));
   return {
     hsr: fix(data.hsr), fives: fix(data.fives), hh: fix(data.hh),
-    ipcBasic: fix(data.ipcBasic), ipcMoh: fix(data.ipcMoh), hfqap: fix(data.hfqap), qij: fix(data.qij), collab: fix(data.collab)
+    ipcBasic: fix(data.ipcBasic), ipcMoh: fix(data.ipcMoh), hfqap: fix(data.hfqap), qij: fix(data.qij), collab: fix(data.collab), aci: fix(data.aci)
   };
 }
 
 export const datasetSize = (d: Dataset) =>
-  d.hsr.length + d.fives.length + d.hh.length + d.ipcBasic.length + d.ipcMoh.length + d.hfqap.length + d.qij.length + d.collab.length;
+  d.hsr.length + d.fives.length + d.hh.length + d.ipcBasic.length + d.ipcMoh.length + d.hfqap.length + d.qij.length + d.collab.length + d.aci.length;
 
 const fromAddress = (v: string | null) => {
   const t = (v || '').trim();

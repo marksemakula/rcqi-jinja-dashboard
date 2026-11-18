@@ -9,7 +9,7 @@ import {
 } from './catalogue';
 import { expectedFor, levelKey } from './scoring';
 import { JOURNAL_ENTRY_TYPES, NOT_IN_COLLAB, projectLabel } from './journal';
-import type { CollabRec, Dataset, FiveSRec, HfqapRec, HhRec, HsrRec, IpcBasicRec, IpcMohRec, QijRec } from './types';
+import type { AciRec, CollabRec, Dataset, FiveSRec, HfqapRec, HhRec, HsrRec, IpcBasicRec, IpcMohRec, QijRec } from './types';
 
 function mulberry32(seed: number) {
   let a = seed >>> 0;
@@ -302,5 +302,39 @@ export function buildDemo(today = new Date()): Dataset {
     }
   ];
 
-  return { hsr, fives, hh, ipcBasic, ipcMoh, hfqap, qij, collab };
+  /* Assisted Client Interviews: their own random stream, so every figure above stays the same */
+  const r2 = mulberry32(20261118);
+  const aci: AciRec[] = [];
+  const UNITS = ['OPD', 'Medical ward', 'Maternity', 'Antenatal', 'EPI/YCC/Postnatal', 'Surgical ward', 'ART', 'Community services'];
+  const UNIT_W = [30, 8, 12, 14, 12, 6, 12, 6];
+  // Medicines and waiting time are the usual weak points in client feedback.
+  const PENALTY: Record<string, number> = { Q1a: 0, Q1b: 0.16, Q1c: 0.04, Q1d: 0, Q1e: 0.22, Q1f: 0.08, Q1g: 0.06, Q1h: 0.1 };
+  const rate = (x: number) => (x > 0.78 ? 'Excellent' : x > 0.52 ? 'Good' : x > 0.3 ? 'Fair' : 'Poor');
+  const pick2 = (arr: string[], w: number[]) => { let x = r2() * w.reduce((a, b) => a + b, 0); for (let i = 0; i < arr.length; i++) { x -= w[i]; if (x <= 0) return arr[i]; } return arr[arr.length - 1]; };
+  let aseq = 0;
+  for (let m = 0; m < 12; m++) {
+    DEMO_FACILITIES.forEach((f, fi) => {
+      const n = (fi === 0 ? 9 : 3) + Math.floor(r2() * 4);
+      for (let i = 0; i < n; i++) {
+        const date = monthDate(m, 1 + Math.floor(r2() * 27));
+        if (date > today) continue;
+        aseq += 1;
+        const q = clamp(f.p + (m / 11) * 0.1 + (r2() - 0.5) * 0.3);
+        const items: Record<string, string> = {};
+        for (const code of Object.keys(PENALTY)) items[code] = rate(q - PENALTY[code] + (r2() - 0.5) * 0.35);
+        const good = Object.values(items).filter((v) => v === 'Excellent' || v === 'Good').length;
+        aci.push({
+          id: `aci-demo-${aseq}`, ts: date.toISOString(), date: iso(date), facility: f.facility, district: f.district, items,
+          facilityMatch: 'selected', facilityEntered: f.facility,
+          serviceUnit: pick2(UNITS, UNIT_W), age: 15 + Math.floor(r2() * 55), sex: r2() < 0.62 ? 'Female' : 'Male',
+          cost: pick2(['Free', 'Affordable', 'Not affordable'], [86, 10, 4]),
+          bribe: r2() < 0.04 ? 'Yes' : 'No',
+          informed: r2() < 0.62 + q * 0.3 ? 'Yes' : 'No',
+          overall: good >= 5 || r2() < 0.15 ? 'Yes' : 'No'
+        });
+      }
+    });
+  }
+
+  return { hsr, fives, hh, ipcBasic, ipcMoh, hfqap, qij, collab, aci };
 }

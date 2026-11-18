@@ -22,7 +22,8 @@ export interface RcsfiConfig {
 
 export const RCSFI: RcsfiConfig = {
   short: 'RCSFI',
-  fullName: null,
+  // Mark, 18 Nov 2026. The guidelines' cover reads "Routing"; their title and text read "Routine".
+  fullName: 'Routine Client Satisfaction Feedback Initiative',
   // The Ministry of Health Client Satisfaction Feedback (CSF) dashboard (Mark, 18 Nov 2026).
   dashboardUrl: 'https://odk.health.go.ug/dashboard',
   dashboardAbout: 'The Ministry of Health Client Satisfaction Feedback dashboard: client satisfaction scores and trends, concerns, comments and the action plan matrix, by region, district and facility.',

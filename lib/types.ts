@@ -1,6 +1,6 @@
-export type FormKey = 'hsr' | 'fives' | 'hh' | 'ipcBasic' | 'ipcMoh' | 'hfqap' | 'qij' | 'collab';
+export type FormKey = 'hsr' | 'fives' | 'hh' | 'ipcBasic' | 'ipcMoh' | 'hfqap' | 'qij' | 'collab' | 'aci';
 
-export const FORM_KEYS: FormKey[] = ['hsr', 'fives', 'hh', 'ipcBasic', 'ipcMoh', 'hfqap', 'qij', 'collab'];
+export const FORM_KEYS: FormKey[] = ['hsr', 'fives', 'hh', 'ipcBasic', 'ipcMoh', 'hfqap', 'qij', 'collab', 'aci'];
 
 export interface BaseRec {
   id: string;
@@ -132,6 +132,17 @@ export interface QijRec extends BaseRec {
   collaborative?: string | null;
 }
 
+/** One Assisted Client Interview (MoH Routine Client Satisfaction Feedback tool). items holds Q1a to Q1h: Excellent, Good, Fair or Poor. */
+export interface AciRec extends BaseRec {
+  serviceUnit?: string | null;
+  age?: number | null;
+  sex?: string | null;
+  cost?: string | null;
+  bribe?: string | null;
+  informed?: string | null;
+  overall?: string | null;
+}
+
 /** One entry in the QI Collaborative Register: a collaborative registered, or an update to its status. */
 export interface CollabRec extends BaseRec {
   entryType?: string | null;
@@ -171,6 +182,7 @@ export interface Dataset {
   hfqap: HfqapRec[];
   qij: QijRec[];
   collab: CollabRec[];
+  aci: AciRec[];
 }
 
 export interface Payload {

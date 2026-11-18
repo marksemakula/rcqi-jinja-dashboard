@@ -486,3 +486,4 @@ nav { display: flex; flex-direction: column; gap: 2px; }
 }
 .journal-collab { margin: 8px 0 0; font-size: 13.5px; color: var(--ink-soft); display: flex; gap: 6px; align-items: baseline; flex-wrap: wrap; }
 .rcsfi-signin { margin: 0; font-size: 13px; }
+.rcsfi-results { margin-top: 26px; }
