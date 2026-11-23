@@ -136,7 +136,7 @@ export default function Journal({ all, filters, forms, focus, go }: TabProps) {
       ) : sel && (
         <article className="journal-sheet" aria-label={`Documentation journal: ${sel.title}`}>
           <header className="journal-head">
-            <Image src="/uganda-coat-of-arms.png" alt="Coat of arms of the Republic of Uganda" width={424} height={459} className="journal-logo" />
+            <Image src="/moh-seal.png" alt="Seal of the Ministry of Health, Republic of Uganda" width={1254} height={1232} className="journal-logo" />
             <div className="journal-titles">
               <p className="journal-kicker">Ministry of Health</p>
               <h2>Documentation Journal for QI activities</h2>

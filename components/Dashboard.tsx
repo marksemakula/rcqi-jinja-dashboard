@@ -186,7 +186,7 @@ export default function Dashboard({ directory = [], busoga = [] }: { directory?:
     <div className="shell">
       <aside className={`sidebar${menuOpen ? ' open' : ''}`}>
         <Link href="/" className="brand" title="Back to the CQI home page">
-          <Image src="/uganda-coat-of-arms.png" alt="Coat of arms of the Republic of Uganda" width={424} height={459} priority className="brand-logo" />
+          <Image src="/moh-seal.png" alt="Seal of the Ministry of Health, Republic of Uganda" width={1254} height={1232} priority className="brand-logo" />
           <div>
             <span className="brand-title">CQI</span>
             <span className="brand-sub">MoH - Busoga RCQI</span>
@@ -211,7 +211,7 @@ export default function Dashboard({ directory = [], busoga = [] }: { directory?:
           <button type="button" className="menu-btn" onClick={() => setMenuOpen((m) => !m)} aria-label="Open navigation" aria-expanded={menuOpen}>
             <svg viewBox="0 0 20 20" width="20" height="20" aria-hidden="true"><path d="M3 5h14M3 10h14M3 15h14" stroke="currentColor" strokeWidth="1.8" strokeLinecap="square" /></svg>
           </button>
-          <Image src="/uganda-coat-of-arms.png" alt="" width={424} height={459} className="top-logo" aria-hidden="true" />
+          <Image src="/moh-seal.png" alt="" width={1254} height={1232} className="top-logo" aria-hidden="true" />
           <div className="title-block">
             <h1>Continuous Quality Improvement</h1>
             <p>CQI dashboard, MoH - Busoga RCQI</p>

@@ -28,12 +28,12 @@ var RCQI = {
   headerColour: '#3B4420',
   headerText: '#F4F5EC',
   font: 'Ubuntu',
-  // Coat of arms of the Republic of Uganda (transparent background) from the public GitHub repository.
+  // Seal of the Ministry of Health, Uganda (transparent background) from the public GitHub repository.
   // Shown at the top of every form and in every notification email.
-  logoUrl: 'https://raw.githubusercontent.com/marksemakula/rcqi-jinja-dashboard/main/public/uganda-coat-of-arms.png',
+  logoUrl: 'https://raw.githubusercontent.com/marksemakula/rcqi-jinja-dashboard/main/public/moh-seal.png',
   // A 144 px copy for email (shown at 48 px), so each notification stays small on mobile data.
-  emailLogoUrl: 'https://raw.githubusercontent.com/marksemakula/rcqi-jinja-dashboard/main/public/uganda-coat-of-arms-email.png',
-  logoWidth: 130,
+  emailLogoUrl: 'https://raw.githubusercontent.com/marksemakula/rcqi-jinja-dashboard/main/public/moh-seal-email.png',
+  logoWidth: 150,
   // The dashboard's own address (rcqi-jinja-dashboard.vercel.app also still works).
   dashboardUrl: 'https://cqi.inzozi.co',
   /** The name that owns the forms, dashboard and emails (Mark, 15 Nov 2026). */
@@ -1034,19 +1034,19 @@ function applyRoutes_(def, found, directory) {
   });
 }
 
-/** Fetches the coat of arms of Uganda (transparent PNG), full size or the small email copy. Returns null if it cannot be fetched. */
+/** Fetches the Ministry of Health seal (transparent PNG), full size or the small email copy. Returns null if it cannot be fetched. */
 function fetchLogo_(url) {
   url = url || RCQI.logoUrl;
   if (!url) return null;
   try {
-    return UrlFetchApp.fetch(url).getBlob().setName('uganda-coat-of-arms.png');
+    return UrlFetchApp.fetch(url).getBlob().setName('moh-seal.png');
   } catch (err) {
-    Logger.log('Coat of arms could not be fetched: ' + err);
+    Logger.log('The Ministry of Health seal could not be fetched: ' + err);
     return null;
   }
 }
 
-/** Places the coat of arms at the top of a form. Skipped quietly if the image cannot be fetched. */
+/** Places the Ministry of Health seal at the top of a form. Skipped quietly if the image cannot be fetched. */
 function addLogo_(form, blob) {
   blob = blob || fetchLogo_();
   if (!blob) return false;
@@ -1056,13 +1056,13 @@ function addLogo_(form, blob) {
 }
 
 /**
- * Puts the coat of arms at the top of every form: replaces the image already there (keeping its place)
+ * Puts the Ministry of Health seal at the top of every form: replaces the image already there (keeping its place)
  * or adds one. Safe to run more than once.
  */
 function replaceFormLogos() {
   var links = JSON.parse(PropertiesService.getScriptProperties().getProperty('FORM_LINKS') || '{}');
   var blob = fetchLogo_();
-  if (!blob) throw new Error('The coat of arms could not be fetched from ' + RCQI.logoUrl);
+  if (!blob) throw new Error('The Ministry of Health seal could not be fetched from ' + RCQI.logoUrl);
   FORM_DEFS.forEach(function (def) {
     if (!links[def.key]) return;
     var form = FormApp.openById(links[def.key].id);
@@ -1070,10 +1070,10 @@ function replaceFormLogos() {
     if (images.length) {
       images[0].asImageItem().setImage(blob).setAlignment(FormApp.Alignment.CENTER).setWidth(RCQI.logoWidth);
       if (images[0].getIndex() !== 0) form.moveItem(images[0].getIndex(), 0);
-      Logger.log(def.short + ': coat of arms replaced');
+      Logger.log(def.short + ': seal replaced');
     } else {
       addLogo_(form, blob);
-      Logger.log(def.short + ': coat of arms added');
+      Logger.log(def.short + ': seal added');
     }
   });
 }
@@ -1736,7 +1736,7 @@ function syncFormItems_(form, def, dryRun, directory) {
   var added = [];
   var matched = 0;
   var cursor = 0;
-  if (meta.length && meta[0].type == FormApp.ItemType.IMAGE) cursor = 1; // keep the coat of arms first
+  if (meta.length && meta[0].type == FormApp.ItemType.IMAGE) cursor = 1; // keep the seal first
   def.items.forEach(function (it) {
     var existing = match(it);
     if (existing) {
@@ -1762,7 +1762,7 @@ function syncFormItems_(form, def, dryRun, directory) {
 
 /**
  * Run from the editor after pasting a new Code.gs: adds new questions to the live forms listed in
- * FORM_UPGRADE_KEYS, puts the coat of arms on every form, creates the notification tabs and refreshes the
+ * FORM_UPGRADE_KEYS, puts the Ministry of Health seal on every form, creates the notification tabs and refreshes the
  * journal project lists. Responses and existing questions are never changed. Safe to run more than once.
  */
 function upgradeForms() {
@@ -2003,7 +2003,7 @@ function esc_(s) {
   return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
 
-/** Army green, square-cornered HTML email with the coat of arms, in Ubuntu where the reader has it. */
+/** Army green, square-cornered HTML email with the Ministry of Health seal, in Ubuntu where the reader has it. */
 function renderEmailHtml_(c) {
   var rows = c.facts.map(function (f) {
     return '<tr><td style="width:36%;padding:9px 12px;border-top:1px solid #E7EADB;color:#6B7158;font-size:13px;vertical-align:top">' + esc_(f[0]) +
@@ -2011,7 +2011,7 @@ function renderEmailHtml_(c) {
       esc_(f[1]).replace(/\r?\n/g, '<br>') + '</td></tr>';
   }).join('');
   var logo = c.hasLogo
-    ? '<td style="padding-right:14px;vertical-align:middle"><img src="cid:arms" width="48" alt="Coat of arms of the Republic of Uganda" style="display:block;width:48px;height:auto;border:0"></td>'
+    ? '<td style="padding-right:14px;vertical-align:middle"><img src="cid:arms" width="48" alt="Seal of the Ministry of Health, Republic of Uganda" style="display:block;width:48px;height:auto;border:0"></td>'
     : '';
   var buttons = '<a href="' + esc_(c.link) + '" style="display:inline-block;background:#4B5320;color:#F4F5EC;text-decoration:none;padding:11px 18px;font-weight:700;font-size:14px;border-radius:0">Open the project journal</a>';
   if (c.formUrl) {

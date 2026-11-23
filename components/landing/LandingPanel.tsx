@@ -18,7 +18,7 @@ export function dashboardHref(district: string, facility: LandingFacility | null
 }
 
 /**
- * The right half of the landing page: the coat of arms, the programme title and a facility filter over every DHIS2
+ * The right half of the landing page: the Ministry of Health seal, the programme title and a facility filter over every DHIS2
  * facility in Busoga. Choosing a district narrows the facilities; choosing a facility sets its district.
  */
 export default function LandingPanel({ facilities, districts }: { facilities: LandingFacility[]; districts: string[] }) {
@@ -48,7 +48,7 @@ export default function LandingPanel({ facilities, districts }: { facilities: La
   return (
     <section className="landing-panel">
       <div className="landing-inner">
-        <Image src="/uganda-coat-of-arms.png" alt="Coat of arms of the Republic of Uganda" width={424} height={459} priority className="landing-arms" />
+        <Image src="/moh-seal.png" alt="Seal of the Ministry of Health, Republic of Uganda" width={1254} height={1232} priority className="landing-arms" />
         <p className="landing-ministry">MINISTRY OF HEALTH</p>
         <p className="landing-hospital">Busoga Region</p>
         <p className="landing-department">Secretariat: JRRH Public Health Department</p>

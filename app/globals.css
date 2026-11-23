@@ -267,7 +267,7 @@ nav { display: flex; flex-direction: column; gap: 2px; }
 .data-table td:first-child { white-space: nowrap; font-weight: 500; color: var(--ag-800); }
 .toolbar-field { display: flex; flex-direction: column; gap: 6px; }
 .toolbar-field > span { font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--ink-muted); }
-/* The Uganda coat of arms is shown as supplied, on a transparent background with no frame. */
+/* The Ministry of Health seal is shown as supplied, on a transparent background with no frame. */
 .brand-logo { flex: none; width: auto; height: 74px; border-radius: 0; background: none; }
 .top-logo { display: none; width: auto; height: 40px; border-radius: 0; background: none; }
 @media (max-width: 900px) { .top-logo { display: block; } }
